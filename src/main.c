@@ -23,8 +23,8 @@ LRESULT CALLBACK mainWindowCallback
         }
         case WM_DESTROY:
         {
-            //TODO: handle
             printf("WM_DESTROY\n");
+            PostQuitMessage(0);
             break;
         }
         case WM_CLOSE:
@@ -41,9 +41,16 @@ LRESULT CALLBACK mainWindowCallback
         }
         case WM_PAINT:
         {
-            PAINTSTRUCT paintStruct;
-
             printf("WM_PAINT\n");
+
+            PAINTSTRUCT paintStruct;
+            BeginPaint(window, &paintStruct);
+
+            //some blitting
+            // PatBlt();
+
+            EndPaint(window, &paintStruct);
+            break;
         }
         default:
         {
@@ -90,12 +97,10 @@ int CALLBACK WinMain
     int width  = CW_USEDEFAULT;
     int height = CW_USEDEFAULT;
 
-    HWND windowHandle = CreateWindowExA(0,
-                                       wc.lpszClassName,
-                                       "CPong",
-                                       WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                       x, y, width, height,
-                                       0, 0, instance, 0);
+    HWND windowHandle = CreateWindowExA(0, wc.lpszClassName, "CPong",
+                                        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                        x, y, width, height,
+                                        0, 0, instance, 0);
     if(!windowHandle)
     {
         printf("unable to obtain window handle.");
