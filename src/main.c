@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <errhandlingapi.h>
 #include <stdio.h>
 
 #undef UNICODE
@@ -54,7 +55,7 @@ int main()
     STARTUPINFO startupInfo;
     GetStartupInfo(&startupInfo);
 
-    return WinMain(0, 0, GetCommandLine(), 0);
+    return WinMain(GetModuleHandle(NULL), 0, GetCommandLine(), 0);
 }
 
 #endif
@@ -68,7 +69,6 @@ int CALLBACK WinMain
 ){
     WNDCLASS wc = {0};
 
-    wc.style = WS_OVERLAPPEDWINDOW;
     wc.lpfnWndProc = mainWindowCallback;
     wc.hInstance = instance;
     wc.lpszClassName = "CPongClass";
@@ -76,7 +76,7 @@ int CALLBACK WinMain
     if(!RegisterClass(&wc))
     {
         printf("unable to register window class.");
-        return 99;
+        return GetLastError();
     };
 
     int x      = CW_USEDEFAULT;
@@ -87,13 +87,13 @@ int CALLBACK WinMain
     HWND windowHandle = CreateWindowEx(0,
                                        wc.lpszClassName,
                                        "CPong",
-                                       wc.style,
+                                       WS_OVERLAPPEDWINDOW,
                                        x, y, width, height,
                                        0, 0, instance, 0);
     if(!windowHandle)
     {
         printf("unable to obtain window handle.");
-        return 87;
+        return GetLastError();
     }
 
     MSG message;
