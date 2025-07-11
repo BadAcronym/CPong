@@ -46,7 +46,7 @@ LRESULT CALLBACK mainWindowCallback
         }
         default:
         {
-            result = DefWindowProc(window, message, wParam, lParam);
+            result = DefWindowProcA(window, message, wParam, lParam);
             break;
         }
     }
@@ -58,9 +58,9 @@ LRESULT CALLBACK mainWindowCallback
 int main()
 {
     STARTUPINFO startupInfo;
-    GetStartupInfo(&startupInfo);
+    GetStartupInfoA(&startupInfo);
 
-    return WinMain(GetModuleHandle(NULL), 0, GetCommandLine(), 0);
+    return WinMain(GetModuleHandleA(NULL), 0, GetCommandLineA(), 0);
 }
 
 #endif
@@ -78,7 +78,7 @@ int CALLBACK WinMain
     wc.hInstance = instance;
     wc.lpszClassName = "CPongClass";
 
-    if(!RegisterClass(&wc))
+    if(!RegisterClassA(&wc))
     {
         printf("unable to register window class.");
         return GetLastError();
@@ -89,7 +89,7 @@ int CALLBACK WinMain
     int width  = CW_USEDEFAULT;
     int height = CW_USEDEFAULT;
 
-    HWND windowHandle = CreateWindowEx(0,
+    HWND windowHandle = CreateWindowExA(0,
                                        wc.lpszClassName,
                                        "CPong",
                                        WS_OVERLAPPEDWINDOW,
@@ -104,7 +104,7 @@ int CALLBACK WinMain
     MSG message;
     for(;;)
     {
-        BOOL msgResult = GetMessage(&message, 0, 0, 0);
+        BOOL msgResult = GetMessageA(&message, 0, 0, 0);
 
         if(msgResult <= 0)
         {
@@ -112,7 +112,7 @@ int CALLBACK WinMain
         }
 
         TranslateMessage(&message);
-        DispatchMessage(&message);
+        DispatchMessageA(&message);
     }
 
     return 0;
