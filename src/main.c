@@ -18,31 +18,32 @@ LRESULT CALLBACK mainWindowCallback
         case WM_SIZE:
         {
             //TODO: handle
-            printf("WM_SIZE");
+            printf("WM_SIZE\n");
             break;
         }
         case WM_DESTROY:
         {
             //TODO: handle
-            printf("WM_DESTROY");
+            printf("WM_DESTROY\n");
             break;
         }
         case WM_CLOSE:
         {
             //TODO: handle
-            printf("WM_CLOSE");
+            printf("WM_CLOSE\n");
             break;
         }
         case WM_ACTIVATEAPP:
         {
             //TODO: handle
-            printf("WM_ACTIVATEAPP");
+            printf("WM_ACTIVATEAPP\n");
             break;
         }
         case WM_PAINT:
         {
-            //TODO: handle
-            printf("WM_PAINT");
+            PAINTSTRUCT paintStruct;
+
+            printf("WM_PAINT\n");
         }
         default:
         {
@@ -92,7 +93,7 @@ int CALLBACK WinMain
     HWND windowHandle = CreateWindowExA(0,
                                        wc.lpszClassName,
                                        "CPong",
-                                       WS_OVERLAPPEDWINDOW,
+                                       WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                        x, y, width, height,
                                        0, 0, instance, 0);
     if(!windowHandle)
