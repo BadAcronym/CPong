@@ -54,9 +54,7 @@ int main()
     STARTUPINFO startupInfo;
     GetStartupInfo(&startupInfo);
 
-    WinMain(0, 0,
-            GetCommandLine(),
-            0);
+    return WinMain(0, 0, GetCommandLine(), 0);
 }
 
 #endif
