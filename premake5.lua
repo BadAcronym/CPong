@@ -1,4 +1,6 @@
 ---@diagnostic disable: undefined-global, undefined-field
+require"ecc/ecc"
+
 workspace("CPong")
     configurations({ "Debug", "Release" })
     location("build")
