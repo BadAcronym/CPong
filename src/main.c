@@ -2,13 +2,80 @@
 
 #include <Windows.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdbool.h>
 
 #include "main.h"
 
-global bool running = true;
+//remove globals eventually
+global bool       running;
 
-LRESULT CALLBACK mainWindowCallback
+global BITMAPINFO bitmapInfo;
+global void       *bitmapMemory;
+global uint32_t   bitmapWidth;
+global uint32_t   bitmapHeight;
+
+internal void win32ResizeDIBSection
+(
+    uint32_t width,
+    uint32_t height
+){
+    if(bitmapMemory)
+    {
+        VirtualFree(bitmapMemory, 0, MEM_RELEASE);
+    }
+
+    bitmapWidth = width;
+    bitmapHeight = height;
+
+    bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
+    bitmapInfo.bmiHeader.biWidth = bitmapWidth;
+    bitmapInfo.bmiHeader.biHeight = bitmapHeight;
+    bitmapInfo.bmiHeader.biPlanes = 1;
+    bitmapInfo.bmiHeader.biBitCount = 32;
+    bitmapInfo.bmiHeader.biCompression = BI_RGB;
+
+    uint32_t bpp = 4;
+    uint32_t bitmapMemorySize = bitmapWidth * bitmapHeight * bpp;
+
+    bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+
+    //test
+    uint8_t *pixel_channel = (uint8_t*)bitmapMemory;
+    uint8_t brightness = ((bitmapWidth/128) * (bitmapHeight/128));
+
+    for(size_t i = 0; i < bitmapMemorySize; i += bpp)
+    {
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        //padding
+        ++pixel_channel;
+    }
+}
+
+internal void win32UpdateWindow
+(
+    HDC       deviceContext,
+    RECT      *windowRect
+){
+    int windowWidth = windowRect->right - windowRect->left;
+    int windowHeight = windowRect->bottom - windowRect->top;
+
+    StretchDIBits(deviceContext,
+                  0, 0, bitmapWidth, bitmapHeight,
+                  0, 0, windowWidth, windowHeight,
+                  bitmapMemory, &bitmapInfo,
+                  DIB_RGB_COLORS, SRCCOPY);
+}
+
+LRESULT CALLBACK win32WindowCallback
 (
     HWND   window,
     UINT   message,
@@ -19,21 +86,28 @@ LRESULT CALLBACK mainWindowCallback
     {
         case WM_SIZE:
         {
-            //TODO: handle correctly
-            printf("WM_SIZE\n");
+            RECT clientRect;
+            GetClientRect(window, &clientRect);
+
+            uint32_t width = clientRect.right - clientRect.left;
+            uint32_t height = clientRect.bottom - clientRect.top;
+
+            //test
+            printf("%dx", width);
+            printf("%d\n", height);
+
+            win32ResizeDIBSection(width, height);
             break;
         }
         case WM_DESTROY:
         {
             //TODO: handle this as error, recreate window?
             printf("WM_DESTROY\n");
-            running = false;
             break;
         }
         case WM_CLOSE:
         {
             //TODO: handle this with message box or prompt
-            printf("WM_CLOSE\n");
             running = false;
             break;
         }
@@ -46,14 +120,12 @@ LRESULT CALLBACK mainWindowCallback
         case WM_PAINT:
         {
             PAINTSTRUCT paintStruct;
-            BeginPaint(window, &paintStruct);
+            HDC context = BeginPaint(window, &paintStruct);
 
-            int x = paintStruct.rcPaint.left;
-            int y = paintStruct.rcPaint.top;
-            int width = paintStruct.rcPaint.right - paintStruct.rcPaint.left;
-            int height = paintStruct.rcPaint.bottom - paintStruct.rcPaint.top;
+            RECT clientRect;
+            GetClientRect(window, &clientRect);
 
-            PatBlt(paintStruct.hdc, x, y, width, height, BLACKNESS);
+            win32UpdateWindow(context, &clientRect);
 
             EndPaint(window, &paintStruct);
             break;
@@ -70,7 +142,7 @@ LRESULT CALLBACK mainWindowCallback
 #ifdef DEBUG
 int main()
 {
-    return WinMain(GetModuleHandleA(NULL), 0, GetCommandLineA(), 0);
+    return WinMain(GetModuleHandleA(0), 0, GetCommandLineA(), 0);
 }
 
 #endif
@@ -91,7 +163,7 @@ int CALLBACK WinMain
 
     WNDCLASS wc = {0};
 
-    wc.lpfnWndProc = mainWindowCallback;
+    wc.lpfnWndProc = win32WindowCallback;
     wc.hInstance = instance;
     wc.lpszClassName = "CPongClass";
 
