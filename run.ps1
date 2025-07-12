@@ -43,5 +43,5 @@ if($LASTEXITCODE -eq 0)
 
     Invoke-Expression $target
 
-    exit $LASTEXITCODE
 }
+exit $LASTEXITCODE
