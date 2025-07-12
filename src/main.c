@@ -1,8 +1,12 @@
 #undef UNICODE
 
 #include <Windows.h>
-#include <errhandlingapi.h>
 #include <stdio.h>
+#include <stdbool.h>
+
+#include "main.h"
+
+global bool running = true;
 
 LRESULT CALLBACK mainWindowCallback
 (
@@ -11,63 +15,61 @@ LRESULT CALLBACK mainWindowCallback
     WPARAM wParam,
     LPARAM lParam
 ){
-    LRESULT result = 0;
-
     switch(message)
     {
         case WM_SIZE:
         {
-            //TODO: handle
+            //TODO: handle correctly
             printf("WM_SIZE\n");
             break;
         }
         case WM_DESTROY:
         {
+            //TODO: handle this as error, recreate window?
             printf("WM_DESTROY\n");
-            PostQuitMessage(0);
+            running = false;
             break;
         }
         case WM_CLOSE:
         {
-            //TODO: handle
+            //TODO: handle this with message box or prompt
             printf("WM_CLOSE\n");
+            running = false;
             break;
         }
         case WM_ACTIVATEAPP:
         {
-            //TODO: handle
+            //TODO: handle at all
             printf("WM_ACTIVATEAPP\n");
             break;
         }
         case WM_PAINT:
         {
-            printf("WM_PAINT\n");
-
             PAINTSTRUCT paintStruct;
             BeginPaint(window, &paintStruct);
 
-            //some blitting
-            // PatBlt();
+            int x = paintStruct.rcPaint.left;
+            int y = paintStruct.rcPaint.top;
+            int width = paintStruct.rcPaint.right - paintStruct.rcPaint.left;
+            int height = paintStruct.rcPaint.bottom - paintStruct.rcPaint.top;
+
+            PatBlt(paintStruct.hdc, x, y, width, height, BLACKNESS);
 
             EndPaint(window, &paintStruct);
             break;
         }
         default:
         {
-            result = DefWindowProcA(window, message, wParam, lParam);
-            break;
+            return DefWindowProcA(window, message, wParam, lParam);
         }
     }
 
-    return result;
+    return 0;
 }
 
 #ifdef DEBUG
 int main()
 {
-    STARTUPINFO startupInfo;
-    GetStartupInfoA(&startupInfo);
-
     return WinMain(GetModuleHandleA(NULL), 0, GetCommandLineA(), 0);
 }
 
@@ -80,6 +82,13 @@ int CALLBACK WinMain
     LPSTR     cmdline,
     int       cmdShow
 ){
+    //-Wunused-parameter
+    (void)prevInstance;
+    (void)cmdline;
+    (void)cmdShow;
+
+    running = true;
+
     WNDCLASS wc = {0};
 
     wc.lpfnWndProc = mainWindowCallback;
@@ -108,7 +117,7 @@ int CALLBACK WinMain
     }
 
     MSG message;
-    for(;;)
+    while(running)
     {
         BOOL msgResult = GetMessageA(&message, 0, 0, 0);
 
