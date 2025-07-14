@@ -19,24 +19,14 @@ global uint32_t   bpp = 4;
 internal void renderBits()
 {
     //test
-    uint8_t *pixel_channel = (uint8_t*)bitmapMemory;
-    uint8_t brightness = ((bitmapWidth/128) * (bitmapHeight/128));
+    uint32_t *pixel = (uint32_t*)bitmapMemory;
+    uint32_t brightness = ((bitmapWidth/121) * (bitmapHeight/121));
 
     uint32_t bitmapMemorySize = bitmapWidth * bitmapHeight * bpp;
 
     for(size_t i = 0; i < bitmapMemorySize; i += bpp)
     {
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        //padding
-        ++pixel_channel;
+        *pixel++ = (brightness << 16) | (brightness << 8) | brightness;
     }
 }
 
