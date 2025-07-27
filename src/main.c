@@ -35,6 +35,27 @@ internal void renderBits(Win32OffscreenBuffer *buf)
     }
 }
 
+typedef struct Win32WindowDimensions
+{
+    uint32_t width;
+    uint32_t height;
+}
+Win32WindowDimensions;
+
+internal Win32WindowDimensions win32GetWindowDimensions
+(
+    HWND window
+){
+    RECT clientRect;
+    GetClientRect(window, &clientRect);
+
+    Win32WindowDimensions result;
+    result.width = clientRect.right - clientRect.left;
+    result.height = clientRect.bottom - clientRect.top;
+
+    return result;
+}
+
 internal void win32ResizeDIBSection
 (
     Win32OffscreenBuffer *buf,
@@ -66,14 +87,12 @@ internal void win32BltBuf
 (
     Win32OffscreenBuffer buf,
     HDC                  deviceContext,
-    RECT                 windowRect
+    uint32_t             width,
+    uint32_t             height
 ){
-    int windowWidth = windowRect.right - windowRect.left;
-    int windowHeight = windowRect.bottom - windowRect.top;
-
     StretchDIBits(deviceContext,
                   0, 0, buf.width, buf.height,
-                  0, 0, windowWidth, windowHeight,
+                  0, 0, width, height,
                   buf.memory, &buf.info,
                   DIB_RGB_COLORS, SRCCOPY);
 }
@@ -89,18 +108,14 @@ LRESULT CALLBACK win32WindowCallback
     {
         case WM_SIZE:
         {
-            RECT clientRect;
-            GetClientRect(window, &clientRect);
-
-            uint32_t width = clientRect.right - clientRect.left;
-            uint32_t height = clientRect.bottom - clientRect.top;
+            Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
             #ifdef DEBUG
-                printf("%dx", width);
-                printf("%d\n", height);
+                printf("%dx", dim.width);
+                printf("%d\n", dim.height);
             #endif
 
-            win32ResizeDIBSection(&backbuf, width, height);
+            win32ResizeDIBSection(&backbuf, dim.width, dim.height);
             break;
         }
         case WM_DESTROY:
@@ -126,10 +141,9 @@ LRESULT CALLBACK win32WindowCallback
             PAINTSTRUCT paintStruct;
             HDC context = BeginPaint(window, &paintStruct);
 
-            RECT clientRect;
-            GetClientRect(window, &clientRect);
+            Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-            win32BltBuf(backbuf, context, clientRect);
+            win32BltBuf(backbuf, context, dim.width, dim.height);
 
             EndPaint(window, &paintStruct);
             break;
@@ -212,9 +226,9 @@ int CALLBACK WinMain
 
         HDC context = GetDC(window);
 
-        RECT clientRect;
-        GetClientRect(window, &clientRect);
-        win32BltBuf(backbuf, context, clientRect);
+        Win32WindowDimensions dim = win32GetWindowDimensions(window);
+
+        win32BltBuf(backbuf, context, dim.width, dim.height);
 
         ReleaseDC(window, context);
     }
