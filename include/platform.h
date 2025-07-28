@@ -1,0 +1,49 @@
+#pragma once
+
+#include <stdint.h>
+#include <windows.h>
+
+typedef struct Win32WindowDimensions
+{
+    uint32_t width;
+    uint32_t height;
+}
+Win32WindowDimensions;
+
+typedef struct Win32OffscreenBuffer
+{
+    BITMAPINFO info;
+    void       *memory;
+    uint32_t   width;
+    uint32_t   height;
+    uint32_t   bpp;
+}
+Win32OffscreenBuffer;
+
+extern LRESULT CALLBACK win32WindowCallback
+(
+    HWND   window,
+    UINT   message,
+    WPARAM wParam,
+    LPARAM lParam
+);
+
+extern Win32WindowDimensions win32GetWindowDimensions
+(
+    HWND window
+);
+
+extern void win32ResizeDIBSection
+(
+    Win32OffscreenBuffer *buf,
+    uint32_t             width,
+    uint32_t             height
+);
+
+extern void win32BltBuf
+(
+    Win32OffscreenBuffer buf,
+    HDC                  deviceContext,
+    uint32_t             width,
+    uint32_t             height
+);
