@@ -3,7 +3,6 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <stdbool.h>
-
 #include "platform.h"
 #include "main.h"
 
@@ -11,17 +10,33 @@
 global bool                 running;
 global Win32OffscreenBuffer backbuf;
 
-internal void renderBits(Win32OffscreenBuffer *buf)
+#define CPONG_WHITE     4294967295 //BGRA all ones
+#define CPONG_BARWIDTH  4
+#define CPONG_BARHEIGHT 20
+//TODO: recalculate bar width upon horizontal resize, & bar height upon vertical resize
+
+internal void renderToBuf(Win32OffscreenBuffer *buf)
 {
-    //test
     uint32_t *pixel = (uint32_t*)buf->memory;
-    uint32_t brightness = ((buf->width/121) * (buf->height/121));
 
-    uint32_t bitmapMemorySize = buf->width * buf->height * buf->bpp;
-
-    for(size_t i = 0; i < bitmapMemorySize; i += buf->bpp)
+    for(size_t i = 0; i < buf->height; ++i)
     {
-        *pixel++ = (brightness << 16) | (brightness << 8) | brightness;
+        for(size_t j = 0; j < buf->width; ++j)
+        {
+            //TODO: draw ball before (on top of) the middle bar
+
+            if((i / CPONG_BARHEIGHT) % 2 == 0      &&
+               j > (buf->width/2 - CPONG_BARWIDTH) &&
+               j < (buf->width/2 + CPONG_BARWIDTH)
+            ){
+                *pixel++ = CPONG_WHITE;
+            }
+            //TODO: case for drawing players
+            else
+            {
+                pixel++;
+            }
+        }
     }
 }
 
@@ -150,7 +165,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        renderBits(&backbuf);
+        renderToBuf(&backbuf);
 
         HDC context = GetDC(window);
 
