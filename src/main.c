@@ -10,24 +10,67 @@
 global bool                 running;
 global Win32OffscreenBuffer backbuf;
 
-#define CPONG_WHITE 4294967295      //BGRA all ones
+#define CPONG_WHITE 0b11111111111111111111111111111111
+#define CPONG_BLACK 0b11111111000000000000000000000000
+#define CPONG_RED   0b11111111111111110000000000000000
+#define CPONG_GREEN 0b11111111000000001111111100000000
+#define CPONG_BLUE  0b11111111000000000000000011111111
 
-internal void renderToBuf(Win32OffscreenBuffer *buf)
-{
+internal void updateBallPosition
+(
+    Ball       *ball,
+    long long  t1
+){
+    long long t2 = win32GetTimestamp();
+
+    float delta = t2 - t1;
+
+    float newX = ball->coord.x + delta * ball->h_vel;
+    float newY = ball->coord.y + delta * ball->v_vel;
+
+    if(newX > 1.0f || newX < 0.0f)
+    {
+        ball->h_vel *= -1;
+        return;
+    }
+
+    if(newY > 1.0f || newY < 0.0f)
+    {
+        ball->v_vel *= -1;
+        return;
+    }
+
+    ball->coord.x = newX;
+    ball->coord.y = newY;
+}
+
+internal void updateBackbuffer
+(
+    Win32OffscreenBuffer *buf,
+    Ball                 *ball
+){
+    updateBallPosition(ball, win32GetTimestamp());
+
     uint32_t *pixel = (uint32_t*)buf->memory;
 
     int bar_width  = buf->width / 256;
     int bar_height = buf->height / 32;
+
+    int ball_size  = buf->width / 256;
+    uint32_t ballX = ball->coord.x * buf->width;
+    uint32_t ballY = ball->coord.y * buf->height;
 
     for(size_t i = buf->height; i > 0; --i)
     {
         for(size_t j = 0; j < buf->width; ++j)
         {
 
-            if(0) //TODO: check ball coordinates, x amount of pixels around it, draw
-            {
-                //do I map a coordinate system and translate it?
-                //do I just work in % of the screen?
+            if(j < ballX + ball_size &&
+               j > ballX - ball_size &&
+               i < ballY + ball_size &&
+               i > ballY - ball_size
+            ){
+                *pixel++ = CPONG_WHITE;
             }
             else if((i / bar_height) % 2 == 1      &&
                     j > (buf->width/2 - bar_width) &&
@@ -35,10 +78,12 @@ internal void renderToBuf(Win32OffscreenBuffer *buf)
             ){
                 *pixel++ = CPONG_WHITE;
             }
-            //TODO: case for drawing players
+            else if(0) //TODO: case for drawing players
+            {
+            }
             else
             {
-                pixel++;
+                *pixel++ = CPONG_BLACK;
             }
         }
     }
@@ -147,6 +192,15 @@ int CALLBACK WinMain
                                         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                         x, y, width, height,
                                         0, 0, instance, 0);
+
+    //TODO: pseudo RNG, wolfenstein or DOOM style for the initial position of the ball
+    //invalidate the middle line and edges of the screen as spawn points
+    Ball ball = {0};
+    ball.coord.x = 0.5f;
+    ball.coord.y = 0.5f;
+    ball.h_vel = 0.0005f;
+    ball.v_vel = 0.0005f;
+
     if(!window)
     {
         printf("unable to obtain window handle.");
@@ -169,7 +223,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        renderToBuf(&backbuf);
+        updateBackbuffer(&backbuf, &ball);
 
         HDC context = GetDC(window);
 
