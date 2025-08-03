@@ -31,6 +31,7 @@ internal void updateScore
     }
 
     //index into seven segment display array (or function) to show score
+    printf("player: %d, enemy: %d\n", score->player, score->enemy);
 
     ball->h_vel *= 1.025f;
 }
@@ -84,8 +85,8 @@ internal void updateBackbuffer
     int bar_height = buf->height / 32;
 
     int ball_size  = buf->width / 128;
-    uint32_t ballX = ball->coord.x * buf->width;
-    uint32_t ballY = ball->coord.y * buf->height;
+    float ballX = ball->coord.x * buf->width;
+    float ballY = ball->coord.y * buf->height;
 
     for(size_t i = buf->height; i > 0; --i)
     {
@@ -106,6 +107,12 @@ internal void updateBackbuffer
                 *pixel++ = CPONG_WHITE;
             }
             else if(0) //TODO: case for drawing players
+            {
+            }
+            else if(0) //TODO: player score (left)
+            {
+            }
+            else if(0) //TODO: enemy score (right)
             {
             }
             else
@@ -205,7 +212,7 @@ int CALLBACK WinMain
 
     running = true;
 
-    win32ResizeDIBSection(&backbuf, 800, 800);
+    win32ResizeDIBSection(&backbuf, 1280, 720);
 
     WNDCLASS wc = {0};
 
