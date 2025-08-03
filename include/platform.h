@@ -20,6 +20,12 @@ typedef struct Win32OffscreenBuffer
 }
 Win32OffscreenBuffer;
 
+typedef struct
+{
+    uint64_t time;
+    uint64_t freq;
+}Time;
+
 extern LRESULT CALLBACK win32WindowCallback
 (
     HWND   window,
@@ -48,4 +54,4 @@ extern void win32BltBuf
     uint32_t             height
 );
 
-extern long long win32GetTimestamp();
+extern Time win32QueryTime();

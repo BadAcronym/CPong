@@ -38,15 +38,20 @@ internal void updateScore
 internal void updateBall
 (
     Ball       *ball,
-    long long  t1,
     Score      *score
 ){
-    long long t2 = win32GetTimestamp();
+    Time t2 = win32QueryTime();
 
-    float delta = t2 - t1;
+    uint64_t delta_int = t2.time - ball->stamp;
+    delta_int *= 1000000;
 
-    float newX = ball->coord.x + delta * ball->h_vel;
-    float newY = ball->coord.y + delta * ball->v_vel;
+    float delta_float = delta_int / t2.freq;
+    delta_float /= 4096;
+
+    ball->stamp = t2.time;
+
+    float newX = ball->coord.x + delta_float * ball->h_vel;
+    float newY = ball->coord.y + delta_float * ball->v_vel;
 
     if(newX > 1.0f || newX < 0.0f)
     {
@@ -71,14 +76,14 @@ internal void updateBackbuffer
     Ball                 *ball,
     Score                *score
 ){
-    updateBall(ball, win32GetTimestamp(), score);
+    updateBall(ball, score);
 
     uint32_t *pixel = (uint32_t*)buf->memory;
 
     int bar_width  = buf->width / 256;
     int bar_height = buf->height / 32;
 
-    int ball_size  = buf->width / 256;
+    int ball_size  = buf->width / 128;
     uint32_t ballX = ball->coord.x * buf->width;
     uint32_t ballY = ball->coord.y * buf->height;
 
@@ -124,7 +129,7 @@ const float ballRNG[] =
 
 internal float getRandomBallVelocity()
 {
-    return ballRNG[win32GetTimestamp() % 4];
+    return ballRNG[win32QueryTime().time % 4];
 }
 
 LRESULT CALLBACK win32WindowCallback
@@ -230,6 +235,7 @@ int CALLBACK WinMain
     ball.coord.y = 0.5f;
     ball.h_vel = getRandomBallVelocity();
     ball.v_vel = getRandomBallVelocity();
+    ball.stamp = win32QueryTime().time;
 
     Score score = {0};
 

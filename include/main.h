@@ -17,6 +17,7 @@ typedef struct
     Coordinate coord;
     float      h_vel;
     float      v_vel;
+    uint64_t   stamp;
 }Ball;
 
 typedef struct
