@@ -18,3 +18,9 @@ typedef struct
     float      h_vel;
     float      v_vel;
 }Ball;
+
+typedef struct
+{
+    uint32_t player;
+    uint32_t enemy;
+}Score;
