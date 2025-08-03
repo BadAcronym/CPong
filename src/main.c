@@ -30,7 +30,6 @@ internal void updateScore
         score->enemy += 1;
     }
 
-    //index into seven segment display array (or function) to show score
     printf("player: %d, enemy: %d\n", score->player, score->enemy);
 
     ball->h_vel *= 1.025f;
@@ -46,13 +45,15 @@ internal void updateBall
     uint64_t delta_int = t2.time - ball->stamp;
     delta_int *= 1000000;
 
-    float delta_float = delta_int / t2.freq;
+    float delta_float = (float)delta_int / t2.freq;
     delta_float /= 4096;
 
     ball->stamp = t2.time;
 
     float newX = ball->coord.x + delta_float * ball->h_vel;
     float newY = ball->coord.y + delta_float * ball->v_vel;
+
+    //TODO: handle player collision
 
     if(newX > 1.0f || newX < 0.0f)
     {
@@ -136,7 +137,7 @@ const float ballRNG[] =
 
 internal float getRandomBallVelocity()
 {
-    return ballRNG[win32QueryTime().time % 4];
+    return ballRNG[win32QueryTime().time % 7];
 }
 
 LRESULT CALLBACK win32WindowCallback
