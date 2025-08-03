@@ -89,6 +89,22 @@ internal void updateBackbuffer
     }
 }
 
+const float ballRNG[] =
+{
+        0.0007f,
+        -0.0004f,
+        0.0006f,
+        -0.0007f,
+        0.0005f,
+        -0.0005f,
+        0.00045f
+};
+
+internal float getRandomBallVelocity()
+{
+    return ballRNG[win32GetTimestamp() % 4];
+}
+
 LRESULT CALLBACK win32WindowCallback
 (
     HWND   window,
@@ -100,14 +116,6 @@ LRESULT CALLBACK win32WindowCallback
     {
         case WM_SIZE:
         {
-            Win32WindowDimensions dim = win32GetWindowDimensions(window);
-
-            #ifdef DEBUG
-                printf("%dx", dim.width);
-                printf("%d\n", dim.height);
-            #endif
-
-            win32ResizeDIBSection(&backbuf, dim.width, dim.height);
             break;
         }
         case WM_DESTROY:
@@ -170,6 +178,8 @@ int CALLBACK WinMain
 
     running = true;
 
+    win32ResizeDIBSection(&backbuf, 800, 600);
+
     WNDCLASS wc = {0};
 
     wc.style = CS_HREDRAW | CS_VREDRAW;
@@ -193,13 +203,11 @@ int CALLBACK WinMain
                                         x, y, width, height,
                                         0, 0, instance, 0);
 
-    //TODO: pseudo RNG, wolfenstein or DOOM style for the initial position of the ball
-    //invalidate the middle line and edges of the screen as spawn points
     Ball ball = {0};
     ball.coord.x = 0.5f;
     ball.coord.y = 0.5f;
-    ball.h_vel = 0.0005f;
-    ball.v_vel = 0.0005f;
+    ball.h_vel = getRandomBallVelocity();
+    ball.v_vel = getRandomBallVelocity();
 
     if(!window)
     {
