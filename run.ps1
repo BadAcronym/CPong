@@ -1,7 +1,9 @@
 param
 (
     [Parameter(position=0,mandatory=$false)]
-    $build = "DEBUG"
+    $build = "DEBUG",
+    [Parameter(position=1,mandatory=$false)]
+    [switch]$dontrun = $false
 )
 
 Write-Host "Building $build...`n"
@@ -37,11 +39,10 @@ if(-Not(Test-Path "./build/"))
 
 $target = "./bin/Win64" + "_$build/$Name.exe"
 
-if($LASTEXITCODE -eq 0)
+if($LASTEXITCODE -eq 0 -and -not $dontrun)
 {
     Write-Host "`nrunning $target..."
 
     Invoke-Expression $target
-
 }
 exit $LASTEXITCODE
