@@ -10,35 +10,131 @@
 global bool                 running;
 global Win32OffscreenBuffer backbuf;
 
-#define CPONG_WHITE 0b11111111111111111111111111111111
-#define CPONG_BLACK 0b11111111000000000000000000000000
-#define CPONG_RED   0b11111111111111110000000000000000
-#define CPONG_GREEN 0b11111111000000001111111100000000
-#define CPONG_BLUE  0b11111111000000000000000011111111
+#define CPONG_WHITE   0b11111111111111111111111111111111
+#define CPONG_BLACK   0b11111111000000000000000000000000
+#define CPONG_RED     0b11111111111111110000000000000000
+#define CPONG_GREEN   0b11111111000000001111111100000000
+#define CPONG_BLUE    0b11111111000000000000000011111111
+#define CPONG_MAGENTA 0b11111111111111110000000011111111
 
-internal void updateScore
+const float ball_hRNG[] =
+{
+    0.001f,
+    -0.0007f,
+    0.0009f,
+    -0.001f,
+    0.0008f,
+    -0.0008f,
+    0.00075f
+};
+
+const float ball_vRNG[] =
+{
+    0.00025f,
+    0.0f,
+    -0.00007f,
+    0.00009f,
+    -0.00001f,
+    -0.000005f,
+    0.00004f,
+    -0.0008f,
+    0.0000003f,
+    0.00075f,
+    -0.0003f,
+    0.0f
+};
+
+//FIXME: player collision checks
+internal bool checkPaddleCollision
 (
-    Score *score,
-    Ball  *ball
+    uint32_t width,
+    uint32_t height,
+    Paddles  *paddles,
+    Ball     *ball
 ){
-    if(ball->h_vel > 0.0f)
+    uint32_t ballX_pix = ball->coord.x * width;
+
+    bool left = ballX_pix - ball->size/2 < paddles->width;
+    bool right = ballX_pix + ball->size/2 > width - paddles->width;
+
+    if(!left && !right)
     {
-        score->player += 1;
+        return false;
+    }
+
+    uint32_t ballY_pix = ball->coord.y * height;
+    uint32_t ball_top  = ballY_pix - ball->size/2;
+    uint32_t ball_bottom  = ballY_pix + ball->size/2;
+
+    uint32_t paddle1Y_pix    = paddles->player1.y * height;
+    uint32_t paddle1_top    = paddle1Y_pix - paddles->height/2;
+    uint32_t paddle1_bottom = paddle1Y_pix + paddles->height/2;
+
+    uint32_t paddle2Y_pix = paddles->player2.y * height;
+    uint32_t paddle2_top    = paddle2Y_pix - paddles->height/2;
+    uint32_t paddle2_bottom = paddle2Y_pix + paddles->height/2;
+
+    if(left)
+    {
+        return (ball_top < paddle1_bottom    &&
+                ball_top > paddle1_top)
+               ||
+               (ball_bottom < paddle1_bottom &&
+                ball_bottom > paddle1_top);
     }
     else
     {
-        score->enemy += 1;
+        return (ball_top < paddle2_bottom    &&
+                ball_top > paddle2_top)
+               ||
+               (ball_bottom < paddle2_bottom &&
+                ball_bottom > paddle2_top);
     }
+}
 
-    printf("player: %d, enemy: %d\n", score->player, score->enemy);
+internal void bounceBallCheck
+(
+    uint32_t width,
+    uint32_t height,
+    Paddles  *paddles,
+    Ball     *ball,
+    float    newX,
+    float    newY
+){
+    if(checkPaddleCollision(width, height, paddles, ball))
+    {
+        ball->h_vel *= -1.05f;
+    }
+    else if(newX >= 1.0f || newX <= 0.0f)
+    {
+        //to reduce code paths, instead of re-checking if(newX >= 1.0f){...}
+        paddles->leftscore += (int)newX;
+        paddles->rightscore += (1 + (int)newX) % 2;
 
-    ball->h_vel *= 1.025f;
+        printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
+        float scoreMod = 1 + 3 * (paddles->leftscore + paddles->rightscore) / 10000.0f;
+        ball->h_vel = ball_hRNG[win32QueryTime().time % 7] * scoreMod;
+
+        ball->coord.x = 0.5f;
+        ball->coord.y = 0.5f;
+    }
+    else if(newY >= 1.0f || newY <= 0.0f)
+    {
+        ball->v_vel *= -1.0f;
+    }
+    else
+    {
+        ball->coord.x = newX;
+        ball->coord.y = newY;
+    }
 }
 
 internal void updateBall
 (
-    Ball       *ball,
-    Score      *score
+    uint32_t width,
+    uint32_t height,
+    Paddles *paddles,
+    Ball    *ball
 ){
     Time t2 = win32QueryTime();
 
@@ -53,62 +149,57 @@ internal void updateBall
     float newX = ball->coord.x + delta_float * ball->h_vel;
     float newY = ball->coord.y + delta_float * ball->v_vel;
 
-    //TODO: handle player collision
-
-    if(newX > 1.0f || newX < 0.0f)
-    {
-        updateScore(score, ball);
-        ball->h_vel *= -1;
-        return;
-    }
-
-    if(newY > 1.0f || newY < 0.0f)
-    {
-        ball->v_vel *= -1;
-        return;
-    }
-
-    ball->coord.x = newX;
-    ball->coord.y = newY;
+    bounceBallCheck(width, height, paddles, ball, newX, newY);
 }
 
 internal void updateBackbuffer
 (
     Win32OffscreenBuffer *buf,
-    Ball                 *ball,
-    Score                *score
+    Paddles              *paddles,
+    Ball                 *ball
 ){
-    updateBall(ball, score);
-
     uint32_t *pixel = (uint32_t*)buf->memory;
 
     int bar_width  = buf->width / 256;
     int bar_height = buf->height / 32;
 
-    int ball_size  = buf->width / 128;
+    paddles->width  = buf->width / 128;
+    paddles->height = buf->height / 8;
+
+    ball->size = buf->width / 128;
+
     float ballX = ball->coord.x * buf->width;
     float ballY = ball->coord.y * buf->height;
+
+    updateBall(buf->width, buf->height, paddles, ball);
 
     for(size_t i = buf->height; i > 0; --i)
     {
         for(size_t j = 0; j < buf->width; ++j)
         {
 
-            if(j < ballX + ball_size &&
-               j > ballX - ball_size &&
-               i < ballY + ball_size &&
-               i > ballY - ball_size
+            if(j < ballX + ball->size &&                            //ball
+               j > ballX - ball->size &&
+               i < ballY + ball->size &&
+               i > ballY - ball->size
             ){
                 *pixel++ = CPONG_WHITE;
             }
-            else if((i / bar_height) % 2 == 1      &&
+            else if((i / bar_height) % 2 == 1      &&               //middle bar
                     j > (buf->width/2 - bar_width) &&
                     j < (buf->width/2 + bar_width)
             ){
                 *pixel++ = CPONG_WHITE;
-            }
-            else if(0) //TODO: case for drawing players
-            {
+            }                                                       //paddles
+            else if((j < paddles->width                                     &&
+                     i < paddles->player1.y * buf->height + paddles->height &&
+                     i > paddles->player1.y * buf->height - paddles->height)
+                    ||
+                    (j > buf->width - paddles->width                        &&
+                     i < paddles->player2.y * buf->height + paddles->height &&
+                     i > paddles->player2.y * buf->height - paddles->height)
+            ){
+                *pixel++ = CPONG_WHITE;
             }
             else if(0) //TODO: player score (left)
             {
@@ -122,22 +213,6 @@ internal void updateBackbuffer
             }
         }
     }
-}
-
-const float ballRNG[] =
-{
-        0.001f,
-        -0.0007f,
-        0.0009f,
-        -0.001f,
-        0.0008f,
-        -0.0008f,
-        0.00075f
-};
-
-internal float getRandomBallVelocity()
-{
-    return ballRNG[win32QueryTime().time % 7];
 }
 
 LRESULT CALLBACK win32WindowCallback
@@ -238,14 +313,18 @@ int CALLBACK WinMain
                                         x, y, width, height,
                                         0, 0, instance, 0);
 
+    Paddles paddles = {0};
+    paddles.player1.x = 0.0f;
+    paddles.player1.y = 0.5f;
+    paddles.player2.x = 1.0f;
+    paddles.player2.y = 0.5f;
+
     Ball ball = {0};
     ball.coord.x = 0.5f;
     ball.coord.y = 0.5f;
-    ball.h_vel = getRandomBallVelocity();
-    ball.v_vel = getRandomBallVelocity();
+    ball.h_vel = ball_hRNG[win32QueryTime().time % 7];
+    ball.v_vel = ball_vRNG[win32QueryTime().time % 12];
     ball.stamp = win32QueryTime().time;
-
-    Score score = {0};
 
     if(!window)
     {
@@ -269,7 +348,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        updateBackbuffer(&backbuf, &ball, &score);
+        updateBackbuffer(&backbuf, &paddles, &ball);
 
         HDC context = GetDC(window);
 
