@@ -10,13 +10,6 @@
 global bool                 global_running;
 global Win32OffscreenBuffer global_backbuffer;
 
-#define CPONG_WHITE   0b11111111111111111111111111111111
-#define CPONG_BLACK   0b11111111000000000000000000000000
-#define CPONG_RED     0b11111111111111110000000000000000
-#define CPONG_GREEN   0b11111111000000001111111100000000
-#define CPONG_BLUE    0b11111111000000000000000011111111
-#define CPONG_MAGENTA 0b11111111111111110000000011111111
-
 const float ball_hRNG[] =
 {
     0.00077f, -0.00077f,
@@ -88,6 +81,7 @@ internal void bounceBallCheck
     if(checkPaddleCollision(width, height, paddles, ball, newX, newY))
     {
         //TODO: if paddle is moving, change v_vel as well and increase it by a tiny flat amount
+        //maybe if it hits the center of the paddle and it's not moving, decrease magnitude of v_vel?
         ball->h_vel *= -1.1f;
     }
     else if(newX <= 0.0f || newX >= 1.0f)

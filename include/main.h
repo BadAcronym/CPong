@@ -1,10 +1,17 @@
 #pragma once
 
+#include <stdint.h>
+
 #define persistent  static
 #define global      static
 #define internal    static
 
-#include <stdint.h>
+#define CPONG_WHITE   0b11111111111111111111111111111111
+#define CPONG_BLACK   0b11111111000000000000000000000000
+#define CPONG_RED     0b11111111111111110000000000000000
+#define CPONG_GREEN   0b11111111000000001111111100000000
+#define CPONG_BLUE    0b11111111000000000000000011111111
+#define CPONG_MAGENTA 0b11111111111111110000000011111111
 
 typedef struct
 {

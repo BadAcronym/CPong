@@ -3,6 +3,8 @@
 #include <stdint.h>
 #include <windows.h>
 
+#define CPONG_BPP     4
+
 typedef struct Win32WindowDimensions
 {
     uint32_t width;
@@ -16,7 +18,6 @@ typedef struct Win32OffscreenBuffer
     void       *memory;
     uint32_t   width;
     uint32_t   height;
-    uint32_t   bpp;
 }
 Win32OffscreenBuffer;
 

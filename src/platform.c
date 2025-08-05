@@ -30,7 +30,6 @@ void win32ResizeDIBSection
 
     buf->width = width;
     buf->height = height;
-    buf->bpp = 4;
 
     buf->info.bmiHeader.biSize = sizeof(buf->info.bmiHeader);
     buf->info.bmiHeader.biWidth = buf->width;
@@ -39,7 +38,7 @@ void win32ResizeDIBSection
     buf->info.bmiHeader.biBitCount = 32;
     buf->info.bmiHeader.biCompression = BI_RGB;
 
-    uint32_t bitmapMemorySize = buf->width * buf->height * buf->bpp;
+    uint32_t bitmapMemorySize = buf->width * buf->height * CPONG_BPP;
 
     buf->memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
 }
