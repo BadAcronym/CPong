@@ -7,8 +7,8 @@
 #include "main.h"
 
 //TODO: remove globals eventually
-global bool                 running;
-global Win32OffscreenBuffer backbuf;
+global bool                 global_running;
+global Win32OffscreenBuffer global_backbuffer;
 
 #define CPONG_WHITE   0b11111111111111111111111111111111
 #define CPONG_BLACK   0b11111111000000000000000000000000
@@ -19,24 +19,19 @@ global Win32OffscreenBuffer backbuf;
 
 const float ball_hRNG[] =
 {
-    0.0021f, -0.0021f,
-    0.0025f, -0.0025f,
-    0.0018f, -0.0018f,
-    0.0023f, -0.0023f
+    0.00077f, -0.00077f,
+    0.00080f, -0.00080f,
+    0.00085f, -0.00085f,
+    0.00090f, -0.00090f,
 };
 
 const float ball_vRNG[] =
 {
-    0.0025f,
-    -0.0007f,
-    0.0009f,
-    -0.0001f,
-    -0.0005f,
-    0.0004f,
-    -0.0008f,
-    0.003f,
-    0.00075f,
-    -0.003f,
+    0.0025f, -0.0007f,
+    0.0009f, -0.0001f,
+    -0.0005f, 0.0004f,
+    -0.0008f, 0.003f,
+    0.00075f, -0.003f
 };
 
 internal bool checkPaddleCollision
@@ -92,7 +87,7 @@ internal void bounceBallCheck
 ){
     if(checkPaddleCollision(width, height, paddles, ball, newX, newY))
     {
-        //TODO: if paddle is moving, change v_vel as well
+        //TODO: if paddle is moving, change v_vel as well and increase it by a tiny flat amount
         ball->h_vel *= -1.1f;
     }
     else if(newX <= 0.0f || newX >= 1.0f)
@@ -114,7 +109,7 @@ internal void bounceBallCheck
         ball->coord.x = 0.5f;
         ball->coord.y = 0.5f;
     }
-    else if(newY <= 0.0f || newX >= 1.0f)
+    else if(newY <= 0.0f || newY >= 1.0f)
     {
         ball->v_vel *= -1.0f;
     }
@@ -230,10 +225,6 @@ LRESULT CALLBACK win32WindowCallback
 ){
     switch(message)
     {
-        case WM_SIZE:
-        {
-            break;
-        }
         case WM_DESTROY:
         {
             //TODO: handle this as error, recreate window?
@@ -243,7 +234,7 @@ LRESULT CALLBACK win32WindowCallback
         case WM_CLOSE:
         {
             //TODO: handle this with message box or prompt
-            running = false;
+            global_running = false;
             break;
         }
         case WM_ACTIVATEAPP:
@@ -259,7 +250,7 @@ LRESULT CALLBACK win32WindowCallback
 
             Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-            win32BltBuf(backbuf, context, dim.width, dim.height);
+            win32BltBuf(global_backbuffer, context, dim.width, dim.height);
 
             EndPaint(window, &paintStruct);
             break;
@@ -300,9 +291,9 @@ int CALLBACK WinMain
     (void)cmdline;
     (void)cmdShow;
 
-    running = true;
+    global_running = true;
 
-    win32ResizeDIBSection(&backbuf, 1280, 720);
+    win32ResizeDIBSection(&global_backbuffer, 1280, 720);
 
     WNDCLASS wc = {0};
 
@@ -346,7 +337,7 @@ int CALLBACK WinMain
         return GetLastError();
     }
 
-    while(running)
+    while(global_running)
     {
         MSG message;
 
@@ -354,7 +345,7 @@ int CALLBACK WinMain
         {
             if(message.message == WM_QUIT)
             {
-                running = false;
+                global_running = false;
                 break;
             }
 
@@ -362,13 +353,13 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        updateBackbuffer(&backbuf, &paddles, &ball);
+        updateBackbuffer(&global_backbuffer, &paddles, &ball);
 
         HDC context = GetDC(window);
 
         Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-        win32BltBuf(backbuf, context, dim.width, dim.height);
+        win32BltBuf(global_backbuffer, context, dim.width, dim.height);
 
         ReleaseDC(window, context);
     }
