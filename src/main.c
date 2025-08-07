@@ -219,6 +219,14 @@ internal void rumblePlayer
     paddles->player2_rumbletime = win32QueryTime().time;
 }
 
+//TODO: update score & 7 segment arrays
+internal void updateScore
+(
+    uint8_t playerIndex
+){
+
+}
+
 internal void bounceBallCheck
 (
     uint32_t width,
@@ -247,7 +255,9 @@ internal void bounceBallCheck
             rumblePlayer(paddles, 0);
         }
 
+        //debug
         printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
+
         float scoreMod = 1 + 3 * (paddles->leftscore + paddles->rightscore) / 10000.0f;
         ball->h_vel = ball_hRNG[win32QueryTime().time % 8] * scoreMod;
         ball->v_vel = ball_vRNG[win32QueryTime().time % 10];
@@ -285,8 +295,8 @@ internal void updateBall
 (
     uint32_t width,
     uint32_t height,
-    Paddles *paddles,
-    Ball    *ball
+    Paddles  *paddles,
+    Ball     *ball
 ){
     float delta = getDeltaTime(ball->updatetime);
     ball->updatetime = win32QueryTime().time;
@@ -305,8 +315,9 @@ internal void updatePaddles
 ){
     if(controlMap->playerIndex == 0)
     {
-        float delta = getDeltaTime(paddles->player1_updatetime);
         paddles->player1_updatetime = win32QueryTime().time;
+
+        float delta = getDeltaTime(paddles->player1_updatetime);
 
         float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
         float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
@@ -322,8 +333,9 @@ internal void updatePaddles
     }
     else if(controlMap->playerIndex == 1)
     {
-        float delta = getDeltaTime(paddles->player2_updatetime);
         paddles->player2_updatetime = win32QueryTime().time;
+
+        float delta = getDeltaTime(paddles->player2_updatetime);
 
         float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
         float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
@@ -347,10 +359,10 @@ internal void updateBackbuffer
 ){
     uint32_t *pixel = (uint32_t*)buf->memory;
 
-    int bar_width  = buf->width / 256;
+    int bar_width  = buf->width  / 256;
     int bar_height = buf->height / 32;
 
-    paddles->width  = buf->width / 128;
+    paddles->width  = buf->width  / 128;
     paddles->height = buf->height / 8;
 
     ball->size = buf->width / 128;
