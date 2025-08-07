@@ -283,6 +283,22 @@ internal void updatePaddles
     }
     else if(controlMap->playerIndex)
     {
+        if(controlMap->up)
+        {
+            float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
+            if(newY_player2_up * height - paddles->height/2 > 0)
+            {
+                paddles->player2.y = newY_player2_up;
+            }
+        }
+        if(controlMap->down)
+        {
+            float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
+            if(newY_player2_down * height + paddles->height/2 < height)
+            {
+                paddles->player2.y = newY_player2_down;
+            }
+        }
     }
 }
 
@@ -479,7 +495,6 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        //TODO: gamepad polling
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
         {
             XINPUT_STATE controlState;
