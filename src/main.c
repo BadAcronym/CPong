@@ -177,6 +177,19 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
+internal void rumblePlayer
+(
+    bool playerIndex
+){
+    XINPUT_VIBRATION vib;
+    //TODO: reset on enough time elapsed (#define xyz)
+    // vib.wLeftMotorSpeed  = 40000;
+    // vib.wRightMotorSpeed = 40000;
+    vib.wLeftMotorSpeed  = 0;
+    vib.wRightMotorSpeed = 0;
+    XInputSetState(playerIndex, &vib);
+}
+
 internal void bounceBallCheck
 (
     uint32_t width,
@@ -197,10 +210,12 @@ internal void bounceBallCheck
         if(newX >= 1.0f)
         {
             ++paddles->leftscore;
+            rumblePlayer(1);
         }
         if(newX <= 0.0f)
         {
             ++paddles->rightscore;
+            rumblePlayer(0);
         }
 
         printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
@@ -259,11 +274,12 @@ internal void updatePaddles
     CpongControlMap *controlMap,
     Paddles         *paddles
 ){
-    float delta = getDeltaTime(paddles->stamp);
-    paddles->stamp = win32QueryTime().time;
 
-    if(!controlMap->playerIndex)
+    if(controlMap->playerIndex == 0)
     {
+        float delta = getDeltaTime(paddles->player1stamp);
+        paddles->player1stamp = win32QueryTime().time;
+
         if(controlMap->up)
         {
             float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
@@ -281,8 +297,11 @@ internal void updatePaddles
             }
         }
     }
-    else if(controlMap->playerIndex)
+    else if(controlMap->playerIndex == 1)
     {
+        float delta = getDeltaTime(paddles->player2stamp);
+        paddles->player2stamp = win32QueryTime().time;
+
         if(controlMap->up)
         {
             float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
@@ -454,9 +473,9 @@ int CALLBACK WinMain
     int height = CW_USEDEFAULT;
 
     HWND window = CreateWindowExA(0, wc.lpszClassName, "CPong",
-                                        WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-                                        x, y, width, height,
-                                        0, 0, instance, 0);
+                                  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                                  x, y, width, height,
+                                  0, 0, instance, 0);
 
     Paddles paddles = {0};
     paddles.v_vel = 0.003f;
@@ -464,7 +483,8 @@ int CALLBACK WinMain
     paddles.player1.y = 0.5f;
     paddles.player2.x = 1.0f;
     paddles.player2.y = 0.5f;
-    paddles.stamp = win32QueryTime().time;
+    paddles.player1stamp = win32QueryTime().time;
+    paddles.player2stamp = paddles.player1stamp;
 
     Ball ball = {0};
     ball.coord.x = 0.5f;
@@ -495,6 +515,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
+        //NOTE: jank for one controller lol
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
         {
             XINPUT_STATE controlState;
@@ -503,11 +524,21 @@ int CALLBACK WinMain
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
 
                 CpongControlMap controlMap;
-                controlMap.playerIndex = (bool)controlIndex;
-                controlMap.up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP;
-                controlMap.down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+                controlMap.playerIndex = 0;
+                controlMap.up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
+                                  pad->sThumbLY > CPONG_DEADZONE;
+
+                controlMap.down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
+                                  pad->sThumbLY < -CPONG_DEADZONE;
 
                 updatePaddles(global_backbuffer.height, &controlMap, &paddles);
+
+                CpongControlMap controlMap2;
+                controlMap2.playerIndex = 1;
+                controlMap2.up   = pad->sThumbRY > CPONG_DEADZONE;
+                controlMap2.down = pad->sThumbRY < -CPONG_DEADZONE;
+
+                updatePaddles(global_backbuffer.height, &controlMap2, &paddles);
             }
         }
 
