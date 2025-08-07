@@ -210,6 +210,8 @@ internal void bounceBallCheck
 
         ball->coord.x = 0.5f;
         ball->coord.y = 0.5f;
+
+        paddles->v_vel *= scoreMod;
     }
     else if(newY <= 0.0f || newY >= 1.0f)
     {
@@ -222,6 +224,19 @@ internal void bounceBallCheck
     }
 }
 
+internal float getDeltaTime
+(
+    uint64_t t1
+){
+    Time t2 = win32QueryTime();
+
+    uint64_t delta_int = t2.time - t1;
+    delta_int *= 1000000;
+
+    float delta_float = (float)delta_int / t2.freq;
+    return delta_float / 4096;
+}
+
 internal void updateBall
 (
     uint32_t width,
@@ -229,52 +244,45 @@ internal void updateBall
     Paddles *paddles,
     Ball    *ball
 ){
-    Time t2 = win32QueryTime();
+    float delta = getDeltaTime(ball->stamp);
+    ball->stamp = win32QueryTime().time;
 
-    uint64_t delta_int = t2.time - ball->stamp;
-    delta_int *= 1000000;
-
-    float delta_float = (float)delta_int / t2.freq;
-    delta_float /= 4096;
-
-    ball->stamp = t2.time;
-
-    float newX = ball->coord.x + delta_float * ball->h_vel;
-    float newY = ball->coord.y + delta_float * ball->v_vel;
+    float newX = ball->coord.x + delta * ball->h_vel;
+    float newY = ball->coord.y + delta * ball->v_vel;
 
     bounceBallCheck(width, height, paddles, ball, newX, newY);
 }
 
-//TODO: update paddles based on player input
 internal void updatePaddles
 (
     uint32_t        height,
     CpongControlMap *controlMap,
     Paddles         *paddles
 ){
-    float v_vel_pix = paddles->v_vel * height;
+    float delta = getDeltaTime(paddles->stamp);
+    paddles->stamp = win32QueryTime().time;
 
-    if(controlMap->playerIndex == 0)
+    if(!controlMap->playerIndex)
     {
         if(controlMap->up)
         {
-            paddles->player1.y += v_vel_pix;
+            float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
+            if(newY_player1_up * height - paddles->height/2 > 0)
+            {
+                paddles->player1.y = newY_player1_up;
+            }
         }
         if(controlMap->down)
         {
-            paddles->player1.y -= v_vel_pix;
+            float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
+            if(newY_player1_down * height + paddles->height/2 < height)
+            {
+                paddles->player1.y = newY_player1_down;
+            }
         }
     }
-    else if(controlMap->playerIndex == 1)
+    else if(controlMap->playerIndex)
     {
-        if(controlMap->up)
-        {
-            paddles->player2.y += v_vel_pix;
-        }
-        if(controlMap->down)
-        {
-            paddles->player2.y -= v_vel_pix;
-        }
     }
 }
 
@@ -298,8 +306,6 @@ internal void updateBackbuffer
     float ballY = ball->coord.y * buf->height;
 
     updateBall(buf->width, buf->height, paddles, ball);
-    //TODO: here??
-    //updatePlayers(paddles);
 
     for(size_t i = buf->height; i > 0; --i)
     {
@@ -382,14 +388,6 @@ LRESULT CALLBACK win32WindowCallback
             EndPaint(window, &paintStruct);
             break;
         }
-        case WM_KEYDOWN:
-        {
-            //TODO:
-        }
-        case WM_KEYUP:
-        {
-            //TODO:
-        }
         default:
         {
             return DefWindowProcA(window, message, wParam, lParam);
@@ -445,10 +443,12 @@ int CALLBACK WinMain
                                         0, 0, instance, 0);
 
     Paddles paddles = {0};
+    paddles.v_vel = 0.003f;
     paddles.player1.x = 0.0f;
     paddles.player1.y = 0.5f;
     paddles.player2.x = 1.0f;
     paddles.player2.y = 0.5f;
+    paddles.stamp = win32QueryTime().time;
 
     Ball ball = {0};
     ball.coord.x = 0.5f;
@@ -488,7 +488,7 @@ int CALLBACK WinMain
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
 
                 CpongControlMap controlMap;
-                controlMap.playerIndex = (uint8_t)controlIndex;
+                controlMap.playerIndex = (bool)controlIndex;
                 controlMap.up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP;
                 controlMap.down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
 
