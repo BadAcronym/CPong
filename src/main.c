@@ -535,8 +535,11 @@ int CALLBACK WinMain
 
                 CpongControlMap controlMap2;
                 controlMap2.playerIndex = 1;
-                controlMap2.up   = pad->sThumbRY > CPONG_DEADZONE;
-                controlMap2.down = pad->sThumbRY < -CPONG_DEADZONE;
+                controlMap2.up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
+                                   pad->sThumbRY > CPONG_DEADZONE;
+
+                controlMap2.down = pad->wButtons & XINPUT_GAMEPAD_A ||
+                                   pad->sThumbRY < -CPONG_DEADZONE;
 
                 updatePaddles(global_backbuffer.height, &controlMap2, &paddles);
             }
