@@ -1,14 +1,116 @@
 #undef UNICODE
+#pragma warning(disable:4191)
 
-#include <Windows.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include "platform.h"
 #include "main.h"
+
+#include <stdbool.h>
+#include <stdio.h>
+
+//XInput Shenanigans... thanks Casey :)
+#define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
+typedef X_INPUT_GET_STATE(x_input_get_state);
+X_INPUT_GET_STATE(XInputGetState_Stub)
+{
+    return 0;
+}
+global x_input_get_state *XInputGetState_ = XInputGetState_Stub;
+#define XInputGetState XInputGetState_
+
+#define X_INPUT_SET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_VIBRATION *pVibration)
+typedef X_INPUT_SET_STATE(x_input_set_state);
+X_INPUT_SET_STATE(XInputSetState_Stub)
+{
+    return 0;
+}
+global x_input_set_state *XInputSetState_ = XInputSetState_Stub;
+#define XInputSetState XInputSetState_
 
 //TODO: remove globals eventually
 global bool                 global_running;
 global Win32OffscreenBuffer global_backbuffer;
+
+Win32WindowDimensions win32GetWindowDimensions
+(
+    HWND window
+){
+    RECT clientRect;
+    GetClientRect(window, &clientRect);
+
+    Win32WindowDimensions result;
+    result.width = clientRect.right - clientRect.left;
+    result.height = clientRect.bottom - clientRect.top;
+
+    return result;
+}
+
+void win32ResizeDIBSection
+(
+    Win32OffscreenBuffer *buf,
+    uint32_t             width,
+    uint32_t             height
+){
+    if(buf->memory)
+    {
+        VirtualFree(buf->memory, 0, MEM_RELEASE);
+    }
+
+    buf->width = width;
+    buf->height = height;
+
+    buf->info.bmiHeader.biSize = sizeof(buf->info.bmiHeader);
+    buf->info.bmiHeader.biWidth = buf->width;
+    buf->info.bmiHeader.biHeight = buf->height;
+    buf->info.bmiHeader.biPlanes = 1;
+    buf->info.bmiHeader.biBitCount = 32;
+    buf->info.bmiHeader.biCompression = BI_RGB;
+
+    uint32_t bitmapMemorySize = buf->width * buf->height * CPONG_BPP;
+
+    buf->memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
+}
+
+void win32BltBuf
+(
+    Win32OffscreenBuffer buf,
+    HDC                  deviceContext,
+    uint32_t             width,
+    uint32_t             height
+){
+    StretchDIBits(deviceContext,
+                  0, 0, width, height,
+                  0, 0, buf.width, buf.height,
+                  buf.memory, &buf.info,
+                  DIB_RGB_COLORS, SRCCOPY);
+}
+
+Time win32QueryTime(void)
+{
+    LARGE_INTEGER timestamp;
+    LARGE_INTEGER frequency;
+    Time t1;
+
+    QueryPerformanceCounter(&timestamp);
+    QueryPerformanceFrequency(&frequency);
+    t1.time = timestamp.QuadPart;
+    t1.freq = frequency.QuadPart;
+
+    return t1;
+}
+
+void win32LoadXInput(void)
+{
+    HMODULE XInputLibrary = LoadLibraryA("xinput1_4.dll");
+    if(!XInputLibrary)
+    {
+        XInputLibrary = LoadLibraryA("xinput1_3.dll");
+    }
+
+    if(XInputLibrary)
+    {
+        XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
+        XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+    }
+}
 
 const float ball_hRNG[] =
 {
@@ -285,6 +387,8 @@ int CALLBACK WinMain
     (void)cmdline;
     (void)cmdShow;
 
+    win32LoadXInput();
+
     global_running = true;
 
     win32ResizeDIBSection(&global_backbuffer, 1280, 720);
@@ -345,6 +449,17 @@ int CALLBACK WinMain
 
             TranslateMessage(&message);
             DispatchMessageA(&message);
+        }
+
+        //TODO: gamepad polling
+        for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
+        {
+            XINPUT_STATE controlState;
+            if(XInputGetState(controlIndex, &controlState) == ERROR_SUCCESS)
+            {
+                XINPUT_GAMEPAD *pad = &controlState.Gamepad;
+                // pad->wButtons
+            }
         }
 
         updateBackbuffer(&global_backbuffer, &paddles, &ball);

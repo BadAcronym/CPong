@@ -1,6 +1,10 @@
 #pragma once
 
 #include <stdint.h>
+#include <Windows.h>
+#include <Xinput.h>
+
+#define CPONG_BPP     4
 
 #define persistent  static
 #define global      static
@@ -36,4 +40,27 @@ typedef struct
     uint32_t   rightscore;
     uint32_t   width;
     uint32_t   height;
+    float      v_vel;
 }Paddles;
+
+typedef struct Win32WindowDimensions
+{
+    uint32_t width;
+    uint32_t height;
+}
+Win32WindowDimensions;
+
+typedef struct Win32OffscreenBuffer
+{
+    BITMAPINFO info;
+    void       *memory;
+    uint32_t   width;
+    uint32_t   height;
+}
+Win32OffscreenBuffer;
+
+typedef struct
+{
+    uint64_t time;
+    uint64_t freq;
+}Time;
