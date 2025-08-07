@@ -30,7 +30,8 @@
 #define CPONG_BLUE    0b11111111000000000000000011111111
 #define CPONG_MAGENTA 0b11111111111111110000000011111111
 
-#define CPONG_DEADZONE 8000
+#define CPONG_DEADZONE   8000
+#define CPONG_RUMBLETIME 6400000
 
 typedef struct Coordinate
 {
@@ -43,7 +44,7 @@ typedef struct Ball
     Coordinate coord;
     float      h_vel;
     float      v_vel;
-    uint64_t   stamp;
+    uint64_t   updatetime;
     uint32_t   size;
 }Ball;
 
@@ -56,8 +57,10 @@ typedef struct Paddles
     uint32_t   width;
     uint32_t   height;
     float      v_vel;
-    uint64_t   player1stamp;
-    uint64_t   player2stamp;
+    uint64_t   player1_updatetime;
+    uint64_t   player1_rumbletime;
+    uint64_t   player2_updatetime;
+    uint64_t   player2_rumbletime;
 }Paddles;
 
 typedef struct CpongControlMap
