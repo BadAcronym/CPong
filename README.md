@@ -13,7 +13,9 @@ what it taught me:
 - getting and processing player input (both polling & interrupt-based, for controller & keyboard)
 - unifying input so controller and keyboard can be used at the same time
 
-plans:
+![preview](preview.png)
+
+future plans:
 - simulating a 7-segment display for the current score
 - gameplay improvements, like simulating friction between paddle and ball
 
