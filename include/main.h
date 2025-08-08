@@ -33,10 +33,10 @@
 #define CPONG_DEADZONE   8192
 #define CPONG_RUMBLETIME 6400000
 
-#define PLAYER1_UP   'W'
-#define PLAYER1_DOWN 'S'
-#define PLAYER2_UP   VK_UP
-#define PLAYER2_DOWN VK_DOWN
+#define PLAYER1_UP       'W'
+#define PLAYER1_DOWN     'S'
+#define PLAYER2_UP       VK_UP
+#define PLAYER2_DOWN     VK_DOWN
 
 typedef struct Coordinate
 {
