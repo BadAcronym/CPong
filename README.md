@@ -3,6 +3,7 @@ Pong, in C! A simple game, simple to play, simple to code.
 
 This is mainly a practice project because I want to work on bigger projects (like a 3D graphics engine)
 and I think it's only appropriate to have built a simple 2D game with no engine before that.
+
 ## Controls:
 Player 1 (left), use either:
 - `W` and `S` on the keyboard,
@@ -29,7 +30,5 @@ Player 2 (right), use either:
 ## future plans:
 - simulating a 7-segment display for the current score
 - gameplay improvements, like simulating friction between paddle and ball
-
-I won't worry about porting this to linux for now. It is, after all, meant for practice.
-I usually code in fairly modern, but C-Style C++ and C99 felt like a good point to go back to and be forced
-to simplify some problems. And it's paid off.
+- sound... possibly
+- abstracting platform layer and porting to X11
