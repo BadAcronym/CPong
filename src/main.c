@@ -30,6 +30,7 @@ clang_diagnostic_pop
 //TODO: remove globals eventually
 global bool                 global_running;
 global Win32OffscreenBuffer global_backbuffer;
+global Paddles              global_paddles;
 
 Win32WindowDimensions win32GetWindowDimensions
 (
@@ -39,7 +40,7 @@ Win32WindowDimensions win32GetWindowDimensions
     GetClientRect(window, &clientRect);
 
     Win32WindowDimensions result;
-    result.width = clientRect.right - clientRect.left;
+    result.width  = clientRect.right  - clientRect.left;
     result.height = clientRect.bottom - clientRect.top;
 
     return result;
@@ -214,13 +215,15 @@ internal void rumblePlayer
     if(playerIndex == 0)
     {
         paddles->player1_rumbletime = win32QueryTime().time;
-        return;
     }
-    paddles->player2_rumbletime = win32QueryTime().time;
+    else if(playerIndex == 1)
+    {
+        paddles->player2_rumbletime = win32QueryTime().time;
+    }
 }
 
 //TODO: update score & 7 segment arrays
-internal void updateScore
+internal void incrementScore
 (
     uint8_t playerIndex
 ){
@@ -247,11 +250,13 @@ internal void bounceBallCheck
         if(newX >= 1.0f)
         {
             ++paddles->leftscore;
+            incrementScore(0);
             rumblePlayer(paddles, 1);
         }
         if(newX <= 0.0f)
         {
             ++paddles->rightscore;
+            incrementScore(1);
             rumblePlayer(paddles, 0);
         }
 
@@ -313,41 +318,31 @@ internal void updatePaddles
     CpongControlMap *controlMap,
     Paddles         *paddles
 ){
-    if(controlMap->playerIndex == 0)
+    float delta = getDeltaTime(paddles->updatetime);
+    paddles->updatetime = win32QueryTime().time;
+
+    float newY_player1_up   = paddles->player1.y - delta * paddles->v_vel;
+    float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
+
+    if(controlMap->player1_up && newY_player1_up * height - paddles->height/2 > 0)
     {
-        paddles->player1_updatetime = win32QueryTime().time;
-
-        float delta = getDeltaTime(paddles->player1_updatetime);
-
-        float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
-        float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
-
-        if(controlMap->up && newY_player1_up * height - paddles->height/2 > 0)
-        {
-            paddles->player1.y = newY_player1_up;
-        }
-        if(controlMap->down && newY_player1_down * height + paddles->height/2 < height)
-        {
-            paddles->player1.y = newY_player1_down;
-        }
+        paddles->player1.y = newY_player1_up;
     }
-    else if(controlMap->playerIndex == 1)
+    if(controlMap->player1_down && newY_player1_down * height + paddles->height/2 < height)
     {
-        paddles->player2_updatetime = win32QueryTime().time;
+        paddles->player1.y = newY_player1_down;
+    }
 
-        float delta = getDeltaTime(paddles->player2_updatetime);
+    float newY_player2_up   = paddles->player2.y - delta * paddles->v_vel;
+    float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
 
-        float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
-        float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
-
-        if(controlMap->up && newY_player2_up * height - paddles->height/2 > 0)
-        {
-            paddles->player2.y = newY_player2_up;
-        }
-        if(controlMap->down && newY_player2_down * height + paddles->height/2 < height)
-        {
-            paddles->player2.y = newY_player2_down;
-        }
+    if(controlMap->player2_up && newY_player2_up * height - paddles->height/2 > 0)
+    {
+        paddles->player2.y = newY_player2_up;
+    }
+    if(controlMap->player2_down && newY_player2_down * height + paddles->height/2 < height)
+    {
+        paddles->player2.y = newY_player2_down;
     }
 }
 
@@ -369,8 +364,6 @@ internal void updateBackbuffer
 
     float ballX = ball->coord.x * buf->width;
     float ballY = ball->coord.y * buf->height;
-
-    updateBall(buf->width, buf->height, paddles, ball);
 
     for(size_t i = buf->height; i > 0; --i)
     {
@@ -453,6 +446,27 @@ LRESULT CALLBACK win32WindowCallback
             EndPaint(window, &paintStruct);
             break;
         }
+        //NOTE: jank for two players on one keyboard
+        case WM_KEYDOWN:
+        {
+            uint32_t VKCode = wParam;
+
+            CpongControlMap controlMap = {0};
+            controlMap.player1_up   = VKCode == VK_UP;
+            controlMap.player1_down = VKCode == VK_DOWN;
+
+            // updatePaddles(global_backbuffer.height, &controlMap, &paddles);
+        }
+        case WM_KEYUP:
+        {
+            uint32_t VKCode = wParam;
+
+            CpongControlMap controlMap = {0};
+            controlMap.player1_up   = VKCode == VK_UP;
+            controlMap.player1_down = VKCode == VK_DOWN;
+
+            // updatePaddles(global_backbuffer.height, &controlMap, &paddles);
+        }
         default:
         {
             return DefWindowProcA(window, message, wParam, lParam);
@@ -507,20 +521,18 @@ int CALLBACK WinMain
                                   x, y, width, height,
                                   0, 0, instance, 0);
 
-    Paddles paddles = {0};
-    paddles.player1.x = 0.0f;
-    paddles.player1.y = 0.5f;
-    paddles.player2.x = 1.0f;
-    paddles.player2.y = 0.5f;
-    paddles.player1_updatetime = win32QueryTime().time;
-    paddles.player2_updatetime = paddles.player1_updatetime;
-    paddles.v_vel = 0.003f;
+    global_paddles.player1.x  = 0.0f;
+    global_paddles.player1.y  = 0.5f;
+    global_paddles.player2.x  = 1.0f;
+    global_paddles.player2.y  = 0.5f;
+    global_paddles.v_vel      = 0.003f;
+    global_paddles.updatetime = win32QueryTime().time;
 
     Ball ball = {0};
-    ball.coord.x = 0.5f;
-    ball.coord.y = 0.5f;
-    ball.h_vel = ball_hRNG[win32QueryTime().time % 8];
-    ball.v_vel = ball_vRNG[win32QueryTime().time % 10];
+    ball.coord.x    = 0.5f;
+    ball.coord.y    = 0.5f;
+    ball.h_vel      = ball_hRNG[win32QueryTime().time % 8];
+    ball.v_vel      = ball_vRNG[win32QueryTime().time % 10];
     ball.updatetime = win32QueryTime().time;
 
     if(!window)
@@ -545,7 +557,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        resetRumble(&paddles);
+        resetRumble(&global_paddles);
 
         //NOTE: jank for one controller lol
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
@@ -555,29 +567,26 @@ int CALLBACK WinMain
             {
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
 
-                CpongControlMap controlMap;
-                controlMap.playerIndex = 0;
-                controlMap.up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
-                                  pad->sThumbLY > CPONG_DEADZONE;
+                CpongControlMap controlMap = {0};
+                controlMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
+                                          pad->sThumbLY > CPONG_DEADZONE;
 
-                controlMap.down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
-                                  pad->sThumbLY < -CPONG_DEADZONE;
+                controlMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
+                                          pad->sThumbLY < -CPONG_DEADZONE;
 
-                updatePaddles(global_backbuffer.height, &controlMap, &paddles);
+                controlMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
+                                          pad->sThumbRY > CPONG_DEADZONE;
 
-                CpongControlMap controlMap2;
-                controlMap2.playerIndex = 1;
-                controlMap2.up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
-                                   pad->sThumbRY > CPONG_DEADZONE;
+                controlMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
+                                          pad->sThumbRY < -CPONG_DEADZONE;
 
-                controlMap2.down = pad->wButtons & XINPUT_GAMEPAD_A ||
-                                   pad->sThumbRY < -CPONG_DEADZONE;
-
-                updatePaddles(global_backbuffer.height, &controlMap2, &paddles);
+                updatePaddles(global_backbuffer.height, &controlMap, &global_paddles);
             }
         }
 
-        updateBackbuffer(&global_backbuffer, &paddles, &ball);
+        updateBall(global_backbuffer.width, global_backbuffer.height, &global_paddles, &ball);
+
+        updateBackbuffer(&global_backbuffer, &global_paddles, &ball);
 
         HDC context = GetDC(window);
 

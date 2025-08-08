@@ -57,17 +57,17 @@ typedef struct Paddles
     uint32_t   width;
     uint32_t   height;
     float      v_vel;
-    uint64_t   player1_updatetime;
+    uint64_t   updatetime;
     uint64_t   player1_rumbletime;
-    uint64_t   player2_updatetime;
     uint64_t   player2_rumbletime;
 }Paddles;
 
 typedef struct CpongControlMap
 {
-    uint8_t playerIndex;
-    bool    up;
-    bool    down;
+    bool    player1_up;
+    bool    player1_down;
+    bool    player2_up;
+    bool    player2_down;
 }CpongControlMap;
 
 typedef struct Win32WindowDimensions
