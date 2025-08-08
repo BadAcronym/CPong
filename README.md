@@ -12,6 +12,7 @@ and I think it's only appropriate to have built a simple 2D game with no engine 
 - utilizing delta time and velocities to keep gameplay speed consistent, no matter the hardware
 - getting and processing player input (both polling & interrupt-based, for controller & keyboard)
 - unifying input so controller and keyboard can be used at the same time
+- finding and loading a library via `GetProcAddress()` instead of linking to a `.dll` file after compilation
 
 ## future plans:
 - simulating a 7-segment display for the current score
