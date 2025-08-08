@@ -180,7 +180,6 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
-//FIXME: WIP
 internal void resetRumble
 (
     Paddles *paddles
