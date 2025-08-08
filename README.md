@@ -24,5 +24,12 @@ to simplify some problems. And it's paid off.
 ![preview](preview.png)
 
 ## Controls:
-- Player 1 (left): `W` and `S` or the left analog stick
-- Player 2 (right): arrow keys or the right analog stick
+Player 1 (left), use either:
+- `W` and `S` on the keyboard,
+- `DPAD_UP` and `DPAD_DOWN` or
+- the left analog stick on the controller
+
+Player 2 (right), use either:
+- `ARROW_UP` and `ARROW_DOWN` on the keyboard,
+- `GAMEPAD_Y` and `GAMEPAD_Y` or
+- the right analog stick on the controller
