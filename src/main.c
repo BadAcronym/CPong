@@ -180,6 +180,32 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
+internal bool checkHorizontalCollision
+(
+    uint32_t width,
+    Ball     *ball,
+    float    newX
+){
+    int32_t newX_pix = newX * width;
+
+    return (newX <= 0.0f || newX >= 1.0f)  ||
+           (newX_pix - ball->size/2 <= 0) ||
+           (newX_pix + ball->size/2 >= width);
+}
+
+internal bool checkVerticalCollision
+(
+    uint32_t height,
+    Ball     *ball,
+    float    newY
+){
+    int32_t newY_pix = newY * height;
+
+    return (newY <= 0.0f || newY >= 1.0f)  ||
+           (newY_pix - ball->size/2 <= 0) ||
+           (newY_pix + ball->size/2 >= height);
+}
+
 internal void resetRumble
 (
     Paddles *paddles
@@ -231,7 +257,7 @@ internal void incrementScore
 
 }
 
-internal void bounceBallCheck
+internal void checkBallBounce
 (
     uint32_t width,
     uint32_t height,
@@ -246,7 +272,7 @@ internal void bounceBallCheck
         //maybe if it hits the center of the paddle and it's not moving, decrease magnitude of v_vel?
         ball->h_vel *= -1.1f;
     }
-    else if(newX <= 0.0f || newX >= 1.0f)
+    else if(checkHorizontalCollision(width, ball, newX))
     {
         if(newX >= 1.0f)
         {
@@ -273,7 +299,7 @@ internal void bounceBallCheck
 
         paddles->v_vel *= scoreMod;
     }
-    else if(newY <= 0.0f || newY >= 1.0f)
+    else if(checkVerticalCollision(height, ball, newY))
     {
         ball->v_vel *= -1.0f;
     }
@@ -310,7 +336,7 @@ internal void updateBall
     float newX = ball->coord.x + delta * ball->h_vel;
     float newY = ball->coord.y + delta * ball->v_vel;
 
-    bounceBallCheck(width, height, paddles, ball, newX, newY);
+    checkBallBounce(width, height, paddles, ball, newX, newY);
 }
 
 internal void updatePaddles
