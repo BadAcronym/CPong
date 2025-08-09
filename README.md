@@ -26,10 +26,10 @@ Player 2 (right), use either:
 - getting and processing player input (both polling & interrupt-based, for controller & keyboard)
 - unifying input so controller and keyboard can be used at the same time
 - finding and loading a library via `GetProcAddress()` instead of linking to a `.dll` file after compilation
+- using multi-line C macros and the `_Pragma()` replacement for `#pragma`
 
 ## future plans:
 - fix permanent loading icon
 - simulating a 7-segment display for the current score
-- gameplay improvements, like simulating friction between paddle and ball
 - sound... possibly
 - abstracting platform layer and porting to X11
