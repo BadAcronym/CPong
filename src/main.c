@@ -390,6 +390,8 @@ internal void updatePaddles
     }
 }
 
+//TODO: move middle bar into a struct? maybe.
+//some kind of animation when scoring, on the score and the paddle who scored perhaps
 internal void updateBackbuffer
 (
     Win32OffscreenBuffer *buf,
@@ -414,19 +416,19 @@ internal void updateBackbuffer
         for(size_t j = 0; j < buf->width; ++j)
         {
 
-            if(j < ballX + ball->size &&                            //ball
+            if(j < ballX + ball->size &&
                j > ballX - ball->size &&
                i < ballY + ball->size &&
                i > ballY - ball->size
             ){
                 *pixel++ = CPONG_WHITE;
             }
-            else if((i / bar_height) % 2 == 1      &&               //middle bar
+            else if((i / bar_height) % 2 == 1      &&
                     j > (buf->width/2 - bar_width) &&
                     j < (buf->width/2 + bar_width)
             ){
                 *pixel++ = CPONG_WHITE;
-            }                                                       //paddles
+            }
             else if((j < paddles->width                                       &&
                      i < paddles->player1.y * buf->height + paddles->height/2 &&
                      i > paddles->player1.y * buf->height - paddles->height/2)
