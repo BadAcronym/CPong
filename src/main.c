@@ -257,6 +257,19 @@ internal void incrementScore
 
 }
 
+internal float getDeltaTime
+(
+    uint64_t t1
+){
+    Time t2 = win32QueryTime();
+
+    uint64_t delta_int = t2.time - t1;
+    delta_int *= 1000000;
+
+    float delta_float = (float)delta_int / t2.freq;
+    return delta_float / 4096;
+}
+
 internal void checkBallBounce
 (
     uint32_t width,
@@ -268,9 +281,13 @@ internal void checkBallBounce
 ){
     if(checkPaddleCollision(width, height, paddles, ball, newX, newY))
     {
-        //TODO: if paddle is moving, change v_vel as well and increase it by a tiny flat amount
-        //maybe if it hits the center of the paddle and it's not moving, decrease magnitude of v_vel?
         ball->h_vel *= -1.1f;
+
+        float delta = getDeltaTime(paddles->lastmovetime);
+        if(delta < 0.001f)
+        {
+            ball->v_vel += (paddles->lastmovedirection * paddles->v_vel / 4);
+        }
     }
     else if(checkHorizontalCollision(width, ball, newX))
     {
@@ -310,19 +327,6 @@ internal void checkBallBounce
     }
 }
 
-internal float getDeltaTime
-(
-    uint64_t t1
-){
-    Time t2 = win32QueryTime();
-
-    uint64_t delta_int = t2.time - t1;
-    delta_int *= 1000000;
-
-    float delta_float = (float)delta_int / t2.freq;
-    return delta_float / 4096;
-}
-
 internal void updateBall
 (
     uint32_t width,
@@ -358,11 +362,15 @@ internal void updatePaddles
 
     if(player1_up && newY_player1_up * height - paddles->height/2 > 0)
     {
-        paddles->player1.y = newY_player1_up;
+        paddles->player1.y         = newY_player1_up;
+        paddles->lastmovetime      = paddles->updatetime;
+        paddles->lastmovedirection = CPONG_UP;
     }
     if(player1_down && newY_player1_down * height + paddles->height/2 < height)
     {
-        paddles->player1.y = newY_player1_down;
+        paddles->player1.y         = newY_player1_down;
+        paddles->lastmovetime      = paddles->updatetime;
+        paddles->lastmovedirection = CPONG_DOWN;
     }
 
     float newY_player2_up   = paddles->player2.y - delta * paddles->v_vel;
@@ -370,11 +378,15 @@ internal void updatePaddles
 
     if(player2_up && newY_player2_up * height - paddles->height/2 > 0)
     {
-        paddles->player2.y = newY_player2_up;
+        paddles->player2.y         = newY_player2_up;
+        paddles->lastmovetime      = paddles->updatetime;
+        paddles->lastmovedirection = CPONG_UP;
     }
     if(player2_down && newY_player2_down * height + paddles->height/2 < height)
     {
-        paddles->player2.y = newY_player2_down;
+        paddles->player2.y         = newY_player2_down;
+        paddles->lastmovetime      = paddles->updatetime;
+        paddles->lastmovedirection = CPONG_DOWN;
     }
 }
 
