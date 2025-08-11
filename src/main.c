@@ -148,7 +148,7 @@ internal bool checkPaddleCollision
     float    newX,
     float    newY
 ){
-    int32_t newX_pix = (int32_t)(newX * width);
+    int64_t newX_pix = (int64_t)(newX * width);
 
     bool left  = newX < 0.0f || newX_pix - ball->size/2 < paddles->width;
     bool right = newX > 1.0f || newX_pix + ball->size/2 > width - paddles->width;
