@@ -29,7 +29,7 @@ Player 2 (right), use either:
 - using multi-line C macros and the `_Pragma()` replacement for `#pragma`
 
 ## future plans:
-- fix permanent loading icon
 - simulating a 7-segment display for the current score
 - sound... possibly
+- main/pause menu, start & restart games
 - abstracting platform layer and porting to X11
