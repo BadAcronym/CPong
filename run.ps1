@@ -40,5 +40,8 @@ $target = "./bin/Win64" + "_$build/$Name.exe"
 if($LASTEXITCODE -eq 0)
 {
     Write-Host "`nrunning $target..."
+
     Invoke-Expression $target
+
+    exit $LASTEXITCODE
 }
