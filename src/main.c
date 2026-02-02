@@ -19,14 +19,10 @@ global Win32OffscreenBuffer backbuf;
 
 const float ball_hRNG[] =
 {
-    0.0025f,
-    -0.0025f,
-    0.0018f,
-    -0.0018f,
-    0.002f,
-    -0.002f,
-    0.0021f,
-    -0.0021f
+    0.0021f, -0.0021f,
+    0.0025f, -0.0025f,
+    0.0018f, -0.0018f,
+    0.0023f, -0.0023f
 };
 
 const float ball_vRNG[] =
@@ -85,34 +81,6 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
-internal bool checkHorizontalBoundsCollision
-(
-    uint32_t width,
-    uint32_t height,
-    Ball     *ball,
-    float    newX
-){
-    if(newX < 0.0f)
-    {
-
-    }
-    else if(ball->coord.x > 1.0f)
-    {
-    }
-
-    return ball->coord.x < 0.0f || ball->coord.x > 1.0f;
-}
-
-internal bool checkVerticalBoundsCollision
-(
-    uint32_t width,
-    uint32_t height,
-    Ball     *ball,
-    float    newY
-){
-    return newY <= 0.0f || newY >= 1.0f;
-}
-
 internal void bounceBallCheck
 (
     uint32_t width,
@@ -127,11 +95,16 @@ internal void bounceBallCheck
         //TODO: if paddle is moving, change v_vel as well
         ball->h_vel *= -1.1f;
     }
-    else if(checkHorizontalBoundsCollision(width, height, ball, newX))
+    else if(newX <= 0.0f || newX >= 1.0f)
     {
-        //to reduce code paths
-        paddles->leftscore += (bool)(newX >= 1.0f);
-        paddles->rightscore += (bool)(newX <= 0.0f);
+        if(newX >= 1.0f)
+        {
+            ++paddles->leftscore;
+        }
+        if(newX <= 0.0f)
+        {
+            ++paddles->rightscore;
+        }
 
         printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
         float scoreMod = 1 + 3 * (paddles->leftscore + paddles->rightscore) / 10000.0f;
@@ -141,7 +114,7 @@ internal void bounceBallCheck
         ball->coord.x = 0.5f;
         ball->coord.y = 0.5f;
     }
-    else if(checkVerticalBoundsCollision(width, height, ball, newY))
+    else if(newY <= 0.0f || newX >= 1.0f)
     {
         ball->v_vel *= -1.0f;
     }
