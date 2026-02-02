@@ -2,20 +2,10 @@
 
 #include <Windows.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdbool.h>
 
+#include "platform.h"
 #include "main.h"
-
-typedef struct Win32OffscreenBuffer
-{
-    BITMAPINFO info;
-    void       *memory;
-    uint32_t   width;
-    uint32_t   height;
-    uint32_t   bpp;
-}
-Win32OffscreenBuffer;
 
 //TODO: remove globals eventually
 global bool                 running;
@@ -33,68 +23,6 @@ internal void renderBits(Win32OffscreenBuffer *buf)
     {
         *pixel++ = (brightness << 16) | (brightness << 8) | brightness;
     }
-}
-
-typedef struct Win32WindowDimensions
-{
-    uint32_t width;
-    uint32_t height;
-}
-Win32WindowDimensions;
-
-internal Win32WindowDimensions win32GetWindowDimensions
-(
-    HWND window
-){
-    RECT clientRect;
-    GetClientRect(window, &clientRect);
-
-    Win32WindowDimensions result;
-    result.width = clientRect.right - clientRect.left;
-    result.height = clientRect.bottom - clientRect.top;
-
-    return result;
-}
-
-internal void win32ResizeDIBSection
-(
-    Win32OffscreenBuffer *buf,
-    uint32_t             width,
-    uint32_t             height
-){
-    if(buf->memory)
-    {
-        VirtualFree(buf->memory, 0, MEM_RELEASE);
-    }
-
-    buf->width = width;
-    buf->height = height;
-    buf->bpp = 4;
-
-    buf->info.bmiHeader.biSize = sizeof(buf->info.bmiHeader);
-    buf->info.bmiHeader.biWidth = buf->width;
-    buf->info.bmiHeader.biHeight = buf->height;
-    buf->info.bmiHeader.biPlanes = 1;
-    buf->info.bmiHeader.biBitCount = 32;
-    buf->info.bmiHeader.biCompression = BI_RGB;
-
-    uint32_t bitmapMemorySize = buf->width * buf->height * buf->bpp;
-
-    buf->memory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-}
-
-internal void win32BltBuf
-(
-    Win32OffscreenBuffer buf,
-    HDC                  deviceContext,
-    uint32_t             width,
-    uint32_t             height
-){
-    StretchDIBits(deviceContext,
-                  0, 0, buf.width, buf.height,
-                  0, 0, width, height,
-                  buf.memory, &buf.info,
-                  DIB_RGB_COLORS, SRCCOPY);
 }
 
 LRESULT CALLBACK win32WindowCallback
