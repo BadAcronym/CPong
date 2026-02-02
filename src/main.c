@@ -280,21 +280,16 @@ internal void updatePaddles
         float delta = getDeltaTime(paddles->player1stamp);
         paddles->player1stamp = win32QueryTime().time;
 
-        if(controlMap->up)
+        float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
+        float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
+
+        if(controlMap->up && newY_player1_up * height - paddles->height/2 > 0)
         {
-            float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
-            if(newY_player1_up * height - paddles->height/2 > 0)
-            {
-                paddles->player1.y = newY_player1_up;
-            }
+            paddles->player1.y = newY_player1_up;
         }
-        if(controlMap->down)
+        if(controlMap->down && newY_player1_down * height + paddles->height/2 < height)
         {
-            float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
-            if(newY_player1_down * height + paddles->height/2 < height)
-            {
-                paddles->player1.y = newY_player1_down;
-            }
+            paddles->player1.y = newY_player1_down;
         }
     }
     else if(controlMap->playerIndex == 1)
@@ -302,21 +297,16 @@ internal void updatePaddles
         float delta = getDeltaTime(paddles->player2stamp);
         paddles->player2stamp = win32QueryTime().time;
 
-        if(controlMap->up)
+        float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
+        float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
+
+        if(controlMap->up && newY_player2_up * height - paddles->height/2 > 0)
         {
-            float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
-            if(newY_player2_up * height - paddles->height/2 > 0)
-            {
-                paddles->player2.y = newY_player2_up;
-            }
+            paddles->player2.y = newY_player2_up;
         }
-        if(controlMap->down)
+        if(controlMap->down && newY_player2_down * height + paddles->height/2 < height)
         {
-            float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
-            if(newY_player2_down * height + paddles->height/2 < height)
-            {
-                paddles->player2.y = newY_player2_down;
-            }
+            paddles->player2.y = newY_player2_down;
         }
     }
 }
