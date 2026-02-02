@@ -186,9 +186,9 @@ internal bool checkHorizontalCollision
     Ball     *ball,
     float    newX
 ){
-    int32_t newX_pix = newX * width;
+    int32_t newX_pix = (int32_t)(newX * width);
 
-    return (newX <= 0.0f || newX >= 1.0f)  ||
+    return (newX <= 0.0f || newX >= 1.0f) ||
            (newX_pix - ball->size/2 <= 0) ||
            (newX_pix + ball->size/2 >= width);
 }
@@ -199,9 +199,9 @@ internal bool checkVerticalCollision
     Ball     *ball,
     float    newY
 ){
-    int32_t newY_pix = newY * height;
+    int32_t newY_pix = (int32_t)(newY * height);
 
-    return (newY <= 0.0f || newY >= 1.0f)  ||
+    return (newY <= 0.0f || newY >= 1.0f) ||
            (newY_pix - ball->size/2 <= 0) ||
            (newY_pix + ball->size/2 >= height);
 }
