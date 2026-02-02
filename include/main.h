@@ -18,10 +18,15 @@ typedef struct
     float      h_vel;
     float      v_vel;
     uint64_t   stamp;
+    uint32_t   size;
 }Ball;
 
 typedef struct
 {
-    uint32_t player;
-    uint32_t enemy;
-}Score;
+    Coordinate player1;
+    Coordinate player2;
+    uint32_t   leftscore;
+    uint32_t   rightscore;
+    uint32_t   width;
+    uint32_t   height;
+}Paddles;
