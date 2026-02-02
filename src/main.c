@@ -10,24 +10,28 @@
 global bool                 running;
 global Win32OffscreenBuffer backbuf;
 
-#define CPONG_WHITE     4294967295 //BGRA all ones
-#define CPONG_BARWIDTH  4
-#define CPONG_BARHEIGHT 20
-//TODO: recalculate bar width upon horizontal resize, & bar height upon vertical resize
+#define CPONG_WHITE 4294967295      //BGRA all ones
 
 internal void renderToBuf(Win32OffscreenBuffer *buf)
 {
     uint32_t *pixel = (uint32_t*)buf->memory;
 
-    for(size_t i = 0; i < buf->height; ++i)
+    int bar_width  = buf->width / 256;
+    int bar_height = buf->height / 32;
+
+    for(size_t i = buf->height; i > 0; --i)
     {
         for(size_t j = 0; j < buf->width; ++j)
         {
-            //TODO: draw ball before (on top of) the middle bar
 
-            if((i / CPONG_BARHEIGHT) % 2 == 0      &&
-               j > (buf->width/2 - CPONG_BARWIDTH) &&
-               j < (buf->width/2 + CPONG_BARWIDTH)
+            if(0) //TODO: check ball coordinates, x amount of pixels around it, draw
+            {
+                //do I map a coordinate system and translate it?
+                //do I just work in % of the screen?
+            }
+            else if((i / bar_height) % 2 == 1      &&
+                    j > (buf->width/2 - bar_width) &&
+                    j < (buf->width/2 + bar_width)
             ){
                 *pixel++ = CPONG_WHITE;
             }
