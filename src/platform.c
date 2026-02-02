@@ -58,9 +58,16 @@ void win32BltBuf
                   DIB_RGB_COLORS, SRCCOPY);
 }
 
-long long win32GetTimestamp()
+Time win32QueryTime()
 {
-    LARGE_INTEGER time;
-    QueryPerformanceCounter(&time);
-    return time.QuadPart;
+    LARGE_INTEGER timestamp;
+    LARGE_INTEGER frequency;
+    Time t1;
+
+    QueryPerformanceCounter(&timestamp);
+    QueryPerformanceFrequency(&frequency);
+    t1.time = timestamp.QuadPart;
+    t1.freq = frequency.QuadPart;
+
+    return t1;
 }
