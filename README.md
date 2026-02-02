@@ -28,6 +28,7 @@ Player 2 (right), use either:
 - finding and loading a library via `GetProcAddress()` instead of linking to a `.dll` file after compilation
 
 ## future plans:
+- fix permanent loading icon
 - simulating a 7-segment display for the current score
 - gameplay improvements, like simulating friction between paddle and ball
 - sound... possibly
