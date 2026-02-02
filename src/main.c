@@ -14,6 +14,31 @@ global BITMAPINFO bitmapInfo;
 global void       *bitmapMemory;
 global uint32_t   bitmapWidth;
 global uint32_t   bitmapHeight;
+global uint32_t   bpp = 4;
+
+internal void renderBits()
+{
+    //test
+    uint8_t *pixel_channel = (uint8_t*)bitmapMemory;
+    uint8_t brightness = ((bitmapWidth/128) * (bitmapHeight/128));
+
+    uint32_t bitmapMemorySize = bitmapWidth * bitmapHeight * bpp;
+
+    for(size_t i = 0; i < bitmapMemorySize; i += bpp)
+    {
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        *pixel_channel = brightness;
+        ++pixel_channel;
+
+        //padding
+        ++pixel_channel;
+    }
+}
 
 internal void win32ResizeDIBSection
 (
@@ -35,29 +60,9 @@ internal void win32ResizeDIBSection
     bitmapInfo.bmiHeader.biBitCount = 32;
     bitmapInfo.bmiHeader.biCompression = BI_RGB;
 
-    uint32_t bpp = 4;
     uint32_t bitmapMemorySize = bitmapWidth * bitmapHeight * bpp;
 
     bitmapMemory = VirtualAlloc(0, bitmapMemorySize, MEM_COMMIT, PAGE_READWRITE);
-
-    //test
-    uint8_t *pixel_channel = (uint8_t*)bitmapMemory;
-    uint8_t brightness = ((bitmapWidth/128) * (bitmapHeight/128));
-
-    for(size_t i = 0; i < bitmapMemorySize; i += bpp)
-    {
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        *pixel_channel = brightness;
-        ++pixel_channel;
-
-        //padding
-        ++pixel_channel;
-    }
 }
 
 internal void win32UpdateWindow
@@ -179,11 +184,11 @@ int CALLBACK WinMain
     int width  = CW_USEDEFAULT;
     int height = CW_USEDEFAULT;
 
-    HWND windowHandle = CreateWindowExA(0, wc.lpszClassName, "CPong",
+    HWND window = CreateWindowExA(0, wc.lpszClassName, "CPong",
                                         WS_OVERLAPPEDWINDOW | WS_VISIBLE,
                                         x, y, width, height,
                                         0, 0, instance, 0);
-    if(!windowHandle)
+    if(!window)
     {
         printf("unable to obtain window handle.");
         return GetLastError();
@@ -192,15 +197,27 @@ int CALLBACK WinMain
     MSG message;
     while(running)
     {
-        BOOL msgResult = GetMessageA(&message, 0, 0, 0);
-
-        if(msgResult <= 0)
+        while(PeekMessageA(&message, 0, 0, 0, PM_REMOVE))
         {
-            break;
+            if(message.message == WM_QUIT)
+            {
+                running = false;
+                break;
+            }
+
+            TranslateMessage(&message);
+            DispatchMessageA(&message);
         }
 
-        TranslateMessage(&message);
-        DispatchMessageA(&message);
+        renderBits();
+
+        HDC context = GetDC(window);
+
+        RECT clientRect;
+        GetClientRect(window, &clientRect);
+        win32UpdateWindow(context, &clientRect);
+
+        ReleaseDC(window, context);
     }
 
     return 0;
