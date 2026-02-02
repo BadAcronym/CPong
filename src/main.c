@@ -490,63 +490,36 @@ LRESULT CALLBACK win32WindowCallback
             EndPaint(window, &paintStruct);
             break;
         }
-        //NOTE: jank for two players on one keyboard
+        //NOTE: idk why we need to intercept WM_KEYDOWN? I'm guessing the DefWindowProc
+        //mangles our signals for the WM_KEYUP case we're handling below...
         case WM_KEYDOWN:
         {
         }
         case WM_KEYUP:
         {
-            bool wasDown = (lParam & (1 << 30)) != 0;
-            bool isDown  = (lParam & (1 << 31)) == 0;
+            bool wasKeyDown = (lParam & (1 << 30)) != 0;
+            bool isKeyDown  = (lParam & (1 << 31)) == 0;
 
-            if(wasDown == isDown)
+            if(wasKeyDown == isKeyDown)
             {
                 break;
             }
 
             if(wParam == PLAYER1_UP)
             {
-                if(isDown)
-                {
-                    global_keyMap.player1_up = true;
-                }
-                else if(wasDown)
-                {
-                    global_keyMap.player1_up = false;
-                }
+                global_keyMap.player1_up = isKeyDown;
             }
             else if(wParam == PLAYER1_DOWN)
             {
-                if(isDown)
-                {
-                    global_keyMap.player1_down = true;
-                }
-                else if(wasDown)
-                {
-                    global_keyMap.player1_down = false;
-                }
+                global_keyMap.player1_down = isKeyDown;
             }
             else if(wParam == PLAYER2_UP)
             {
-                if(isDown)
-                {
-                    global_keyMap.player2_up = true;
-                }
-                else if(wasDown)
-                {
-                    global_keyMap.player2_up = false;
-                }
+                global_keyMap.player2_up = isKeyDown;
             }
             else if(wParam == PLAYER2_DOWN)
             {
-                if(isDown)
-                {
-                    global_keyMap.player2_down = true;
-                }
-                else if(wasDown)
-                {
-                    global_keyMap.player2_down = false;
-                }
+                global_keyMap.player2_down = isKeyDown;
             }
         }
         default:
@@ -641,7 +614,6 @@ int CALLBACK WinMain
 
         resetRumble(&global_paddles);
 
-        //NOTE: jank for one controller lol
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
         {
             XINPUT_STATE controlState;
@@ -649,16 +621,16 @@ int CALLBACK WinMain
             {
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
                 global_controllerMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
-                                                 pad->sThumbLY > CPONG_DEADZONE;
+                                                    pad->sThumbLY > CPONG_DEADZONE;
 
                 global_controllerMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
-                                                 pad->sThumbLY < -CPONG_DEADZONE;
+                                                    pad->sThumbLY < -CPONG_DEADZONE;
 
                 global_controllerMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
-                                                 pad->sThumbRY > CPONG_DEADZONE;
+                                                    pad->sThumbRY > CPONG_DEADZONE;
 
                 global_controllerMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
-                                                 pad->sThumbRY < -CPONG_DEADZONE;
+                                                    pad->sThumbRY < -CPONG_DEADZONE;
 
             }
         }
