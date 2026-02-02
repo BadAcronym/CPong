@@ -177,17 +177,46 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
+//FIXME: WIP
+internal void resetRumble
+(
+    Paddles *paddles
+){
+    XINPUT_VIBRATION rumble;
+    rumble.wLeftMotorSpeed  = 0;
+    rumble.wRightMotorSpeed = 0;
+
+    Time t2 = win32QueryTime();
+
+    uint64_t delta1 = t2.time - paddles->player1_rumbletime;
+    if(delta1 > CPONG_RUMBLETIME)
+    {
+        XInputSetState(0, &rumble);
+    }
+
+    uint64_t delta2 = t2.time - paddles->player2_rumbletime;
+    if(delta2 > CPONG_RUMBLETIME)
+    {
+        XInputSetState(1, &rumble);
+    }
+}
+
 internal void rumblePlayer
 (
-    bool playerIndex
+    Paddles *paddles,
+    uint8_t playerIndex
 ){
-    XINPUT_VIBRATION vib;
-    //TODO: reset on enough time elapsed (#define xyz)
-    // vib.wLeftMotorSpeed  = 40000;
-    // vib.wRightMotorSpeed = 40000;
-    vib.wLeftMotorSpeed  = 0;
-    vib.wRightMotorSpeed = 0;
-    XInputSetState(playerIndex, &vib);
+    XINPUT_VIBRATION rumble;
+    rumble.wLeftMotorSpeed  = 40000;
+    rumble.wRightMotorSpeed = 40000;
+    XInputSetState(playerIndex, &rumble);
+
+    if(playerIndex == 0)
+    {
+        paddles->player1_rumbletime = win32QueryTime().time;
+        return;
+    }
+    paddles->player2_rumbletime = win32QueryTime().time;
 }
 
 internal void bounceBallCheck
@@ -210,12 +239,12 @@ internal void bounceBallCheck
         if(newX >= 1.0f)
         {
             ++paddles->leftscore;
-            rumblePlayer(1);
+            rumblePlayer(paddles, 1);
         }
         if(newX <= 0.0f)
         {
             ++paddles->rightscore;
-            rumblePlayer(0);
+            rumblePlayer(paddles, 0);
         }
 
         printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
@@ -259,8 +288,8 @@ internal void updateBall
     Paddles *paddles,
     Ball    *ball
 ){
-    float delta = getDeltaTime(ball->stamp);
-    ball->stamp = win32QueryTime().time;
+    float delta = getDeltaTime(ball->updatetime);
+    ball->updatetime = win32QueryTime().time;
 
     float newX = ball->coord.x + delta * ball->h_vel;
     float newY = ball->coord.y + delta * ball->v_vel;
@@ -274,11 +303,10 @@ internal void updatePaddles
     CpongControlMap *controlMap,
     Paddles         *paddles
 ){
-
     if(controlMap->playerIndex == 0)
     {
-        float delta = getDeltaTime(paddles->player1stamp);
-        paddles->player1stamp = win32QueryTime().time;
+        float delta = getDeltaTime(paddles->player1_updatetime);
+        paddles->player1_updatetime = win32QueryTime().time;
 
         float newY_player1_up = paddles->player1.y - delta * paddles->v_vel;
         float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
@@ -294,8 +322,8 @@ internal void updatePaddles
     }
     else if(controlMap->playerIndex == 1)
     {
-        float delta = getDeltaTime(paddles->player2stamp);
-        paddles->player2stamp = win32QueryTime().time;
+        float delta = getDeltaTime(paddles->player2_updatetime);
+        paddles->player2_updatetime = win32QueryTime().time;
 
         float newY_player2_up = paddles->player2.y - delta * paddles->v_vel;
         float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
@@ -468,20 +496,20 @@ int CALLBACK WinMain
                                   0, 0, instance, 0);
 
     Paddles paddles = {0};
-    paddles.v_vel = 0.003f;
     paddles.player1.x = 0.0f;
     paddles.player1.y = 0.5f;
     paddles.player2.x = 1.0f;
     paddles.player2.y = 0.5f;
-    paddles.player1stamp = win32QueryTime().time;
-    paddles.player2stamp = paddles.player1stamp;
+    paddles.player1_updatetime = win32QueryTime().time;
+    paddles.player2_updatetime = paddles.player1_updatetime;
+    paddles.v_vel = 0.003f;
 
     Ball ball = {0};
     ball.coord.x = 0.5f;
     ball.coord.y = 0.5f;
     ball.h_vel = ball_hRNG[win32QueryTime().time % 8];
     ball.v_vel = ball_vRNG[win32QueryTime().time % 10];
-    ball.stamp = win32QueryTime().time;
+    ball.updatetime = win32QueryTime().time;
 
     if(!window)
     {
@@ -504,6 +532,8 @@ int CALLBACK WinMain
             TranslateMessage(&message);
             DispatchMessageA(&message);
         }
+
+        resetRumble(&paddles);
 
         //NOTE: jank for one controller lol
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
