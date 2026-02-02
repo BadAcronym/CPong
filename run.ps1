@@ -1,0 +1,43 @@
+param
+(
+    [Parameter(position=0,mandatory=$false)]
+    $build = "DEBUG"
+)
+
+Write-Host "Building $build...`n"
+
+$Configurations = "Debug", "Release"
+$Name = "CPong"
+
+foreach($config in $Configurations)
+{
+    $objPath = "./obj/Win64" + "_$config"
+    $binPath = "./bin/Win64" + "_$config"
+
+    if(-Not(Test-Path $objPath))
+    {
+        &mkdir $objPath
+    }
+
+    if(-Not(Test-Path $binPath))
+    {
+        &mkdir $binPath
+    }
+}
+
+if(-Not(Test-Path "./build/"))
+{
+    &mkdir "./build/"
+}
+
+&premake5 vs2022
+
+&MSBuild ./build/$Name.sln -p:Configuration=$build
+
+$target = "./bin/Win64" + "_$build/$Name.exe"
+
+if($LASTEXITCODE -eq 0)
+{
+    Write-Host "`nrunning $target..."
+    &$target
+}
