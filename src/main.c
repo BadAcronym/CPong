@@ -641,6 +641,7 @@ int CALLBACK WinMain
     LPSTR     cmdline,
     int       cmdShow
 ){
+    ShowCursor(false);
 
     win32LoadXInput();
 
