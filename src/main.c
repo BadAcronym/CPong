@@ -16,10 +16,30 @@ global Win32OffscreenBuffer backbuf;
 #define CPONG_GREEN 0b11111111000000001111111100000000
 #define CPONG_BLUE  0b11111111000000000000000011111111
 
-internal void updateBallPosition
+internal void updateScore
+(
+    Score *score,
+    Ball  *ball
+){
+    if(ball->h_vel > 0.0f)
+    {
+        score->player += 1;
+    }
+    else
+    {
+        score->enemy += 1;
+    }
+
+    //index into seven segment display array (or function) to show score
+
+    ball->h_vel *= 1.025f;
+}
+
+internal void updateBall
 (
     Ball       *ball,
-    long long  t1
+    long long  t1,
+    Score      *score
 ){
     long long t2 = win32GetTimestamp();
 
@@ -30,6 +50,7 @@ internal void updateBallPosition
 
     if(newX > 1.0f || newX < 0.0f)
     {
+        updateScore(score, ball);
         ball->h_vel *= -1;
         return;
     }
@@ -47,9 +68,10 @@ internal void updateBallPosition
 internal void updateBackbuffer
 (
     Win32OffscreenBuffer *buf,
-    Ball                 *ball
+    Ball                 *ball,
+    Score                *score
 ){
-    updateBallPosition(ball, win32GetTimestamp());
+    updateBall(ball, win32GetTimestamp(), score);
 
     uint32_t *pixel = (uint32_t*)buf->memory;
 
@@ -91,13 +113,13 @@ internal void updateBackbuffer
 
 const float ballRNG[] =
 {
-        0.0007f,
-        -0.0004f,
-        0.0006f,
+        0.001f,
         -0.0007f,
-        0.0005f,
-        -0.0005f,
-        0.00045f
+        0.0009f,
+        -0.001f,
+        0.0008f,
+        -0.0008f,
+        0.00075f
 };
 
 internal float getRandomBallVelocity()
@@ -178,7 +200,7 @@ int CALLBACK WinMain
 
     running = true;
 
-    win32ResizeDIBSection(&backbuf, 800, 600);
+    win32ResizeDIBSection(&backbuf, 800, 800);
 
     WNDCLASS wc = {0};
 
@@ -209,6 +231,8 @@ int CALLBACK WinMain
     ball.h_vel = getRandomBallVelocity();
     ball.v_vel = getRandomBallVelocity();
 
+    Score score = {0};
+
     if(!window)
     {
         printf("unable to obtain window handle.");
@@ -231,7 +255,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        updateBackbuffer(&backbuf, &ball);
+        updateBackbuffer(&backbuf, &ball, &score);
 
         HDC context = GetDC(window);
 
