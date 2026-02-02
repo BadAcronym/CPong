@@ -30,6 +30,8 @@
 #define CPONG_BLUE    0b11111111000000000000000011111111
 #define CPONG_MAGENTA 0b11111111111111110000000011111111
 
+#define CPONG_DEADZONE 8000
+
 typedef struct Coordinate
 {
     float x;
@@ -54,12 +56,13 @@ typedef struct Paddles
     uint32_t   width;
     uint32_t   height;
     float      v_vel;
-    uint64_t   stamp;
+    uint64_t   player1stamp;
+    uint64_t   player2stamp;
 }Paddles;
 
 typedef struct CpongControlMap
 {
-    bool    playerIndex;
+    uint8_t playerIndex;
     bool    up;
     bool    down;
 }CpongControlMap;
