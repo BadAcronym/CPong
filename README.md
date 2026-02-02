@@ -4,7 +4,7 @@ Pong, in C! A simple game, simple to play, simple to code.
 This is mainly a practice project because I want to work on bigger projects (like a 3D graphics engine)
 and I think it's only appropriate to have built a simple 2D game with no engine before that.
 
-what it taught me:
+## what it taught me:
 - programming a minimal application with only the C runtime library and the WIN32 API
 - writing a simple software renderer that writes to a bitmap in RAM and blits that to the window
 - normalizing coordinates for positions independent of buffer or screen size
@@ -13,9 +13,7 @@ what it taught me:
 - getting and processing player input (both polling & interrupt-based, for controller & keyboard)
 - unifying input so controller and keyboard can be used at the same time
 
-![preview](preview.png)
-
-future plans:
+## future plans:
 - simulating a 7-segment display for the current score
 - gameplay improvements, like simulating friction between paddle and ball
 
@@ -23,4 +21,8 @@ I won't worry about porting this to linux for now. It is, after all, meant for p
 I usually code in fairly modern, but C-Style C++ and C99 felt like a good point to go back to and be forced
 to simplify some problems. And it's paid off.
 
-<!-- ## Player Controls: -->
+![preview](preview.png)
+
+## Controls:
+- Player 1 (left): `W` and `S` or the left analog stick
+- Player 2 (right): arrow keys or the right analog stick
