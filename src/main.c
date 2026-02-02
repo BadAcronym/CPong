@@ -1,3 +1,4 @@
+#include <math.h>
 #undef UNICODE
 
 #include "main.h"
@@ -180,7 +181,7 @@ internal bool checkPaddleCollision
             (ball_bottom < paddle2_bottom && ball_bottom > paddle2_top));
 }
 
-internal bool checkHorizontalCollision
+internal uint8_t checkHorizontalCollision
 (
     uint32_t width,
     Ball     *ball,
@@ -188,9 +189,18 @@ internal bool checkHorizontalCollision
 ){
     int32_t newX_pix = (int32_t)(newX * width);
 
-    return (newX <= 0.0f || newX >= 1.0f) ||
-           (newX_pix - ball->size/2 <= 0) ||
-           (newX_pix + ball->size/2 >= width);
+    if ((newX <= 0.0f) ||
+        (newX_pix - ball->size/2 <= 0)
+    ){
+        return CPONG_LEFTWALL;
+    }
+    else if((newX >= 1.0f) ||
+            (newX_pix + ball->size/2 >= width)
+    ){
+        return CPONG_RIGHTWALL;
+    }
+
+    return CPONG_NOHIT;
 }
 
 internal bool checkVerticalCollision
@@ -249,12 +259,72 @@ internal void rumblePlayer
     }
 }
 
-//TODO: update score & 7 segment arrays
-internal void incrementScore
+//TODO:
+internal bool isSevenSegment
 (
+    uint32_t x,
+    uint32_t y,
+    uint32_t width,
+    uint32_t height,
+    Paddles  *paddles
+){
+    return false;
+}
+
+internal const uint64_t segments[] =
+{
+    CPONG_SEGMENT_0, CPONG_SEGMENT_1,
+    CPONG_SEGMENT_2, CPONG_SEGMENT_3,
+    CPONG_SEGMENT_4, CPONG_SEGMENT_5,
+    CPONG_SEGMENT_6, CPONG_SEGMENT_7,
+    CPONG_SEGMENT_8, CPONG_SEGMENT_9
+};
+
+//little endian, meaning the last 8 bits of the return value
+//represent the 0th digit, the second to last 8 bits the 1st
+//
+//technically can go up to 8 digit scores, but who the fuck...
+internal uint64_t translateToSevenSegment
+(
+    uint32_t score
+){
+    uint64_t digitMask = 0;
+
+    for(uint8_t i = 0; i < 8; ++i)
+    {
+        uint32_t digit = score % (i^10);
+        digitMask = digitMask & (segments[digit] << 8 * i);
+
+        if(score < (uint32_t)(i^10))
+        {
+            return digitMask;
+        }
+    }
+
+    for(uint8_t i = 0; i < 8; ++i)
+    {
+        digitMask = CPONG_SEGMENT_9 & (CPONG_SEGMENT_9 << 8 * i);
+    }
+
+    return digitMask;
+}
+
+internal void incrementPlayerScore
+(
+    Paddles *paddles,
     uint8_t playerIndex
 ){
-
+    if(playerIndex == 0)
+    {
+        paddles->player1_score += 1;
+        paddles->player1_sevenSegment = translateToSevenSegment(paddles->player1_score);
+        printf("%llu\n", (paddles->player1_sevenSegment));
+    }
+    else if(playerIndex == 1)
+    {
+        paddles->player2_score += 1;
+        paddles->player2_sevenSegment = translateToSevenSegment(paddles->player2_score);
+    }
 }
 
 internal float getDeltaTime
@@ -279,6 +349,8 @@ internal void checkBallBounce
     float    newX,
     float    newY
 ){
+    uint8_t horizontal_result = checkHorizontalCollision(width, ball, newX);
+
     if(checkPaddleCollision(width, height, paddles, ball, newX, newY))
     {
         ball->h_vel *= -1.1f;
@@ -289,25 +361,23 @@ internal void checkBallBounce
             ball->v_vel += (paddles->lastmovedirection * paddles->v_vel / 4);
         }
     }
-    else if(checkHorizontalCollision(width, ball, newX))
+    else if(horizontal_result)
     {
-        if(newX >= 1.0f)
+        if(horizontal_result == CPONG_LEFTWALL)
         {
-            ++paddles->leftscore;
-            incrementScore(0);
-            rumblePlayer(paddles, 1);
-        }
-        if(newX <= 0.0f)
-        {
-            ++paddles->rightscore;
-            incrementScore(1);
+            incrementPlayerScore(paddles, 1);
             rumblePlayer(paddles, 0);
+        }
+        else if(horizontal_result == CPONG_RIGHTWALL)
+        {
+            incrementPlayerScore(paddles, 0);
+            rumblePlayer(paddles, 1);
         }
 
         //debug
-        printf("left: %d, right: %d\n", paddles->leftscore, paddles->rightscore);
+        printf("player1: %d, player2: %d\n", paddles->player1_score, paddles->player2_score);
 
-        float scoreMod = 1 + 3 * (paddles->leftscore + paddles->rightscore) / 10000.0f;
+        float scoreMod = 1 + 3 * (paddles->player1_score + paddles->player2_score) / 10000.0f;
         ball->h_vel = ball_hRNG[win32QueryTime().time % 8] * scoreMod;
         ball->v_vel = ball_vRNG[win32QueryTime().time % 10];
 
@@ -411,9 +481,9 @@ internal void updateBackbuffer
     float ballX = ball->coord.x * buf->width;
     float ballY = ball->coord.y * buf->height;
 
-    for(size_t i = buf->height; i > 0; --i)
+    for(uint32_t i = buf->height; i > 0; --i)
     {
-        for(size_t j = 0; j < buf->width; ++j)
+        for(uint32_t j = 0; j < buf->width; ++j)
         {
 
             if(j < ballX + ball->size &&
@@ -439,11 +509,9 @@ internal void updateBackbuffer
             ){
                 *pixel++ = CPONG_WHITE;
             }
-            else if(0) //TODO: player 1 score (left)
+            else if(isSevenSegment(j, i, buf->width, buf->height, paddles))
             {
-            }
-            else if(0) //TODO: player 2 score (right)
-            {
+                *pixel++ = CPONG_WHITE;
             }
             else
             {
