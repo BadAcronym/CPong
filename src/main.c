@@ -148,6 +148,14 @@ internal void updateBall
     bounceBallCheck(width, height, paddles, ball, newX, newY);
 }
 
+//TODO: update paddles based on player input
+internal void updatePlayers
+(
+    Paddles *paddles
+){
+    return;
+}
+
 internal void updateBackbuffer
 (
     Win32OffscreenBuffer *buf,
@@ -168,6 +176,8 @@ internal void updateBackbuffer
     float ballY = ball->coord.y * buf->height;
 
     updateBall(buf->width, buf->height, paddles, ball);
+    //TODO: here??
+    //updatePlayers(paddles);
 
     for(size_t i = buf->height; i > 0; --i)
     {
@@ -197,10 +207,10 @@ internal void updateBackbuffer
             ){
                 *pixel++ = CPONG_WHITE;
             }
-            else if(0) //TODO: player score (left)
+            else if(0) //TODO: player 1 score (left)
             {
             }
-            else if(0) //TODO: enemy score (right)
+            else if(0) //TODO: player 2 score (right)
             {
             }
             else
@@ -253,6 +263,14 @@ LRESULT CALLBACK win32WindowCallback
 
             EndPaint(window, &paintStruct);
             break;
+        }
+        case WM_KEYDOWN:
+        {
+            //TODO:
+        }
+        case WM_KEYUP:
+        {
+            //TODO:
         }
         default:
         {
