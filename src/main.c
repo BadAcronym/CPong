@@ -1,12 +1,12 @@
 #undef UNICODE
-#pragma warning(disable:4191)
 
 #include "main.h"
 
-#include <stdbool.h>
 #include <stdio.h>
 
 //XInput Shenanigans... thanks Casey :)
+clang_ignore_unused
+
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
 X_INPUT_GET_STATE(XInputGetState_Stub)
@@ -24,6 +24,8 @@ X_INPUT_SET_STATE(XInputSetState_Stub)
 }
 global x_input_set_state *XInputSetState_ = XInputSetState_Stub;
 #define XInputSetState XInputSetState_
+
+clang_diagnostic_pop
 
 //TODO: remove globals eventually
 global bool                 global_running;
@@ -107,8 +109,12 @@ void win32LoadXInput(void)
 
     if(XInputLibrary)
     {
-        XInputGetState = (x_input_get_state *)GetProcAddress(XInputLibrary, "XInputGetState");
-        XInputSetState = (x_input_set_state *)GetProcAddress(XInputLibrary, "XInputSetState");
+        clang_ignore_functype_mismatch
+
+        XInputGetState = (x_input_get_state*)GetProcAddress(XInputLibrary, "XInputGetState");
+        XInputSetState = (x_input_set_state*)GetProcAddress(XInputLibrary, "XInputSetState");
+
+        clang_diagnostic_pop
     }
 }
 
@@ -240,11 +246,36 @@ internal void updateBall
 }
 
 //TODO: update paddles based on player input
-internal void updatePlayers
+internal void updatePaddles
 (
-    Paddles *paddles
+    uint32_t        height,
+    CpongControlMap *controlMap,
+    Paddles         *paddles
 ){
-    return;
+    float v_vel_pix = paddles->v_vel * height;
+
+    if(controlMap->playerIndex == 0)
+    {
+        if(controlMap->up)
+        {
+            paddles->player1.y += v_vel_pix;
+        }
+        if(controlMap->down)
+        {
+            paddles->player1.y -= v_vel_pix;
+        }
+    }
+    else if(controlMap->playerIndex == 1)
+    {
+        if(controlMap->up)
+        {
+            paddles->player2.y += v_vel_pix;
+        }
+        if(controlMap->down)
+        {
+            paddles->player2.y -= v_vel_pix;
+        }
+    }
 }
 
 internal void updateBackbuffer
@@ -375,6 +406,7 @@ int main()
 }
 #endif
 
+clang_ignore_unused
 int CALLBACK WinMain
 (
     HINSTANCE instance,
@@ -382,10 +414,6 @@ int CALLBACK WinMain
     LPSTR     cmdline,
     int       cmdShow
 ){
-    //-Wunused-parameter
-    (void)prevInstance;
-    (void)cmdline;
-    (void)cmdShow;
 
     win32LoadXInput();
 
@@ -458,7 +486,13 @@ int CALLBACK WinMain
             if(XInputGetState(controlIndex, &controlState) == ERROR_SUCCESS)
             {
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
-                // pad->wButtons
+
+                CpongControlMap controlMap;
+                controlMap.playerIndex = (uint8_t)controlIndex;
+                controlMap.up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP;
+                controlMap.down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN;
+
+                updatePaddles(global_backbuffer.height, &controlMap, &paddles);
             }
         }
 
@@ -475,3 +509,4 @@ int CALLBACK WinMain
 
     return 0;
 }
+clang_diagnostic_pop

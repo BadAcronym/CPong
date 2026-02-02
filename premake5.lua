@@ -15,6 +15,7 @@ workspace("CPong")
         objdir("obj/Win64_%{cfg.buildcfg}")
         includedirs({ "./include/", })
         files({ "./src/*", "./include/*" })
+        buildoptions{"/wd4068"}
 
 filter("configurations:Debug")
     kind("ConsoleApp")

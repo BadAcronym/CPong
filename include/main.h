@@ -1,14 +1,27 @@
 #pragma once
 
-#include <stdint.h>
 #include <Windows.h>
 #include <Xinput.h>
+
+#include <stdbool.h>
+#include <stdint.h>
 
 #define CPONG_BPP     4
 
 #define persistent  static
 #define global      static
 #define internal    static
+
+#define clang_ignore_unused\
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wunused-parameter\"") \
+
+#define clang_ignore_functype_mismatch\
+    _Pragma("clang diagnostic push") \
+    _Pragma("clang diagnostic ignored \"-Wcast-function-type-mismatch\"") \
+
+#define clang_diagnostic_pop\
+    _Pragma("clang diagnostic pop")\
 
 #define CPONG_WHITE   0b11111111111111111111111111111111
 #define CPONG_BLACK   0b11111111000000000000000000000000
@@ -17,13 +30,13 @@
 #define CPONG_BLUE    0b11111111000000000000000011111111
 #define CPONG_MAGENTA 0b11111111111111110000000011111111
 
-typedef struct
+typedef struct Coordinate
 {
     float x;
     float y;
 }Coordinate;
 
-typedef struct
+typedef struct Ball
 {
     Coordinate coord;
     float      h_vel;
@@ -32,7 +45,7 @@ typedef struct
     uint32_t   size;
 }Ball;
 
-typedef struct
+typedef struct Paddles
 {
     Coordinate player1;
     Coordinate player2;
@@ -42,6 +55,13 @@ typedef struct
     uint32_t   height;
     float      v_vel;
 }Paddles;
+
+typedef struct CpongControlMap
+{
+    uint8_t playerIndex;
+    bool    up;
+    bool    down;
+}CpongControlMap;
 
 typedef struct Win32WindowDimensions
 {
