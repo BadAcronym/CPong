@@ -27,7 +27,7 @@ global x_input_set_state *XInputSetState_ = XInputSetState_Stub;
 
 clang_diagnostic_pop
 
-//TODO: remove globals eventually
+//remove globals eventually... or never?
 global bool                 global_running;
 global Win32OffscreenBuffer global_backbuffer;
 global CpongControlMap      global_controllerMap;
