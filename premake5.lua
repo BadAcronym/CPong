@@ -10,9 +10,7 @@ workspace("CPong")
         cdialect("C99")
         targetdir("bin/%{cfg.platform}_%{cfg.buildcfg}")
         objdir("obj/%{cfg.platform}_%{cfg.buildcfg}")
-        includedirs({
-            "./include/",
-        })
+        includedirs({ "./include/", })
         files({ "./src/*", "./include/*" })
 
 filter("configurations:Debug")
