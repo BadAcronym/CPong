@@ -30,6 +30,8 @@ clang_diagnostic_pop
 //TODO: remove globals eventually
 global bool                 global_running;
 global Win32OffscreenBuffer global_backbuffer;
+global CpongControlMap      global_controllerMap;
+global CpongControlMap      global_keyMap;
 global Paddles              global_paddles;
 
 Win32WindowDimensions win32GetWindowDimensions
@@ -74,15 +76,15 @@ void win32ResizeDIBSection
 
 void win32BltBuf
 (
-    Win32OffscreenBuffer buf,
+    Win32OffscreenBuffer *buf,
     HDC                  deviceContext,
     uint32_t             width,
     uint32_t             height
 ){
     StretchDIBits(deviceContext,
                   0, 0, width, height,
-                  0, 0, buf.width, buf.height,
-                  buf.memory, &buf.info,
+                  0, 0, buf->width, buf->height,
+                  buf->memory, &buf->info,
                   DIB_RGB_COLORS, SRCCOPY);
 }
 
@@ -315,7 +317,6 @@ internal void updateBall
 internal void updatePaddles
 (
     uint32_t        height,
-    CpongControlMap *controlMap,
     Paddles         *paddles
 ){
     float delta = getDeltaTime(paddles->updatetime);
@@ -324,11 +325,17 @@ internal void updatePaddles
     float newY_player1_up   = paddles->player1.y - delta * paddles->v_vel;
     float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
 
-    if(controlMap->player1_up && newY_player1_up * height - paddles->height/2 > 0)
+    bool player1_up   = global_controllerMap.player1_up   || global_keyMap.player1_up;
+    bool player1_down = global_controllerMap.player1_down || global_keyMap.player1_down;
+
+    bool player2_up   = global_controllerMap.player2_up   || global_keyMap.player2_up;
+    bool player2_down = global_controllerMap.player2_down || global_keyMap.player2_down;
+
+    if(player1_up && newY_player1_up * height - paddles->height/2 > 0)
     {
         paddles->player1.y = newY_player1_up;
     }
-    if(controlMap->player1_down && newY_player1_down * height + paddles->height/2 < height)
+    if(player1_down && newY_player1_down * height + paddles->height/2 < height)
     {
         paddles->player1.y = newY_player1_down;
     }
@@ -336,11 +343,11 @@ internal void updatePaddles
     float newY_player2_up   = paddles->player2.y - delta * paddles->v_vel;
     float newY_player2_down = paddles->player2.y + delta * paddles->v_vel;
 
-    if(controlMap->player2_up && newY_player2_up * height - paddles->height/2 > 0)
+    if(player2_up && newY_player2_up * height - paddles->height/2 > 0)
     {
         paddles->player2.y = newY_player2_up;
     }
-    if(controlMap->player2_down && newY_player2_down * height + paddles->height/2 < height)
+    if(player2_down && newY_player2_down * height + paddles->height/2 < height)
     {
         paddles->player2.y = newY_player2_down;
     }
@@ -441,7 +448,7 @@ LRESULT CALLBACK win32WindowCallback
 
             Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-            win32BltBuf(global_backbuffer, context, dim.width, dim.height);
+            win32BltBuf(&global_backbuffer, context, dim.width, dim.height);
 
             EndPaint(window, &paintStruct);
             break;
@@ -449,23 +456,61 @@ LRESULT CALLBACK win32WindowCallback
         //NOTE: jank for two players on one keyboard
         case WM_KEYDOWN:
         {
-            uint32_t VKCode = wParam;
-
-            CpongControlMap controlMap = {0};
-            controlMap.player1_up   = VKCode == VK_UP;
-            controlMap.player1_down = VKCode == VK_DOWN;
-
-            // updatePaddles(global_backbuffer.height, &controlMap, &paddles);
         }
         case WM_KEYUP:
         {
-            uint32_t VKCode = wParam;
+            bool wasDown = (lParam & (1 << 30)) != 0;
+            bool isDown  = (lParam & (1 << 31)) == 0;
 
-            CpongControlMap controlMap = {0};
-            controlMap.player1_up   = VKCode == VK_UP;
-            controlMap.player1_down = VKCode == VK_DOWN;
+            if(wasDown == isDown)
+            {
+                break;
+            }
 
-            // updatePaddles(global_backbuffer.height, &controlMap, &paddles);
+            if(wParam == PLAYER1_UP)
+            {
+                if(isDown)
+                {
+                    global_keyMap.player1_up = true;
+                }
+                else if(wasDown)
+                {
+                    global_keyMap.player1_up = false;
+                }
+            }
+            else if(wParam == PLAYER1_DOWN)
+            {
+                if(isDown)
+                {
+                    global_keyMap.player1_down = true;
+                }
+                else if(wasDown)
+                {
+                    global_keyMap.player1_down = false;
+                }
+            }
+            else if(wParam == PLAYER2_UP)
+            {
+                if(isDown)
+                {
+                    global_keyMap.player2_up = true;
+                }
+                else if(wasDown)
+                {
+                    global_keyMap.player2_up = false;
+                }
+            }
+            else if(wParam == PLAYER2_DOWN)
+            {
+                if(isDown)
+                {
+                    global_keyMap.player2_down = true;
+                }
+                else if(wasDown)
+                {
+                    global_keyMap.player2_down = false;
+                }
+            }
         }
         default:
         {
@@ -566,24 +611,22 @@ int CALLBACK WinMain
             if(XInputGetState(controlIndex, &controlState) == ERROR_SUCCESS)
             {
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
+                global_controllerMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
+                                                 pad->sThumbLY > CPONG_DEADZONE;
 
-                CpongControlMap controlMap = {0};
-                controlMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
-                                          pad->sThumbLY > CPONG_DEADZONE;
+                global_controllerMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
+                                                 pad->sThumbLY < -CPONG_DEADZONE;
 
-                controlMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
-                                          pad->sThumbLY < -CPONG_DEADZONE;
+                global_controllerMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
+                                                 pad->sThumbRY > CPONG_DEADZONE;
 
-                controlMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
-                                          pad->sThumbRY > CPONG_DEADZONE;
+                global_controllerMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
+                                                 pad->sThumbRY < -CPONG_DEADZONE;
 
-                controlMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
-                                          pad->sThumbRY < -CPONG_DEADZONE;
-
-                updatePaddles(global_backbuffer.height, &controlMap, &global_paddles);
             }
         }
 
+        updatePaddles(global_backbuffer.height, &global_paddles);
         updateBall(global_backbuffer.width, global_backbuffer.height, &global_paddles, &ball);
 
         updateBackbuffer(&global_backbuffer, &global_paddles, &ball);
@@ -592,7 +635,7 @@ int CALLBACK WinMain
 
         Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-        win32BltBuf(global_backbuffer, context, dim.width, dim.height);
+        win32BltBuf(&global_backbuffer, context, dim.width, dim.height);
 
         ReleaseDC(window, context);
     }
