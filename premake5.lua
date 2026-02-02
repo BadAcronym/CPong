@@ -17,7 +17,6 @@ workspace("CPong")
 
 filter("configurations:Debug")
     kind("ConsoleApp")
-    linkoptions("/SUBSYSTEM:Windows")
     defines{"DEBUG"}
     staticruntime("off")
     runtime("Debug")
