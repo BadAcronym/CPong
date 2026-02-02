@@ -47,3 +47,5 @@ extern void win32BltBuf
     uint32_t             width,
     uint32_t             height
 );
+
+extern long long win32GetTimestamp();

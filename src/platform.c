@@ -57,3 +57,10 @@ void win32BltBuf
                   buf.memory, &buf.info,
                   DIB_RGB_COLORS, SRCCOPY);
 }
+
+long long win32GetTimestamp()
+{
+    LARGE_INTEGER time;
+    QueryPerformanceCounter(&time);
+    return time.QuadPart;
+}
