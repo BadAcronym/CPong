@@ -36,25 +36,25 @@ internal bool checkPaddleCollision
     float    newX,
     float    newY
 ){
-    int32_t newX_pix  = newX * width;
+    int32_t newX_pix = (int32_t)(newX * width);
 
-    bool left  = newX_pix - ball->size/2 < paddles->width;
-    bool right = newX_pix + ball->size/2 > width - paddles->width;
+    bool left  = newX < 0.0f || newX_pix - ball->size/2 < paddles->width;
+    bool right = newX > 1.0f || newX_pix + ball->size/2 > width - paddles->width;
 
     if(!left && !right)
     {
         return false;
     }
 
-    int32_t ballY_pix   = newY * height;
+    int32_t ballY_pix   = (int32_t)(newY * height);
     int32_t ball_top    = ballY_pix - ball->size/2;
     int32_t ball_bottom = ballY_pix + ball->size/2;
 
-    int32_t paddle1Y_pix   = paddles->player1.y * height;
+    int32_t paddle1Y_pix   = (int32_t)(paddles->player1.y * height);
     int32_t paddle1_top    = paddle1Y_pix - paddles->height/2;
     int32_t paddle1_bottom = paddle1Y_pix + paddles->height/2;
 
-    int32_t paddle2Y_pix   = paddles->player2.y * height;
+    int32_t paddle2Y_pix   = (int32_t)(paddles->player2.y * height);
     int32_t paddle2_top    = paddle2Y_pix - paddles->height/2;
     int32_t paddle2_bottom = paddle2Y_pix + paddles->height/2;
 
