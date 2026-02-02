@@ -31,5 +31,5 @@ Player 1 (left), use either:
 
 Player 2 (right), use either:
 - `ARROW_UP` and `ARROW_DOWN` on the keyboard,
-- `GAMEPAD_Y` and `GAMEPAD_Y` or
+- `GAMEPAD_Y` and `GAMEPAD_A` or
 - the right analog stick on the controller
