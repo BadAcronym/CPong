@@ -54,11 +54,12 @@ typedef struct Paddles
     uint32_t   width;
     uint32_t   height;
     float      v_vel;
+    uint64_t   stamp;
 }Paddles;
 
 typedef struct CpongControlMap
 {
-    uint8_t playerIndex;
+    bool    playerIndex;
     bool    up;
     bool    down;
 }CpongControlMap;
