@@ -1,8 +1,8 @@
+#undef UNICODE
+
 #include <Windows.h>
 #include <errhandlingapi.h>
 #include <stdio.h>
-
-#undef UNICODE
 
 LRESULT CALLBACK mainWindowCallback
 (
@@ -38,6 +38,11 @@ LRESULT CALLBACK mainWindowCallback
             //TODO: handle
             printf("WM_ACTIVATEAPP");
             break;
+        }
+        case WM_PAINT:
+        {
+            //TODO: handle
+            printf("WM_PAINT");
         }
         default:
         {
