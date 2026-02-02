@@ -2,7 +2,6 @@
 require"ecc/ecc"
 
 workspace("CPong")
-    kind("WindowedApp")
     configurations({ "Debug", "Release" })
     location("build")
     system("Windows")
@@ -17,6 +16,8 @@ workspace("CPong")
         files({ "./src/*", "./include/*" })
 
 filter("configurations:Debug")
+    kind("ConsoleApp")
+    linkoptions("/SUBSYSTEM:Windows")
     defines{"DEBUG"}
     staticruntime("off")
     runtime("Debug")
@@ -24,6 +25,7 @@ filter("configurations:Debug")
     ignoredefaultlibraries({ "MSVCRT" })
 
 filter("configurations:Release")
+    kind("WindowedApp")
     staticruntime("off")
     runtime("Release")
     symbols("Off")
