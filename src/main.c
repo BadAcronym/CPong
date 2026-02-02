@@ -1,7 +1,7 @@
-#include <math.h>
 #undef UNICODE
 
 #include "main.h"
+#include <assert.h>
 
 #include <stdio.h>
 
@@ -259,7 +259,6 @@ internal void rumblePlayer
     }
 }
 
-//TODO:
 internal bool isSevenSegment
 (
     uint32_t x,
@@ -268,6 +267,28 @@ internal bool isSevenSegment
     uint32_t height,
     Paddles  *paddles
 ){
+    uint32_t segment_height = height / 32;
+    if(y > segment_height * 2)
+    {
+        return false;
+    }
+
+    int8_t pos_mod = 1;
+    if(x < width / 2)
+    {
+        pos_mod = -1;
+    }
+
+    uint16_t segment_gap   = (uint16_t)(width / 128);
+    uint16_t segment_width = (uint16_t)(width / 32);
+
+    for(uint32_t i = 0; i < 64; i+=8)
+    {
+        int64_t distance = pos_mod * i * segment_width + segment_gap;
+    }
+
+    //TODO:
+
     return false;
 }
 
@@ -284,26 +305,31 @@ internal const uint64_t segments[] =
 //represent the 0th digit, the second to last 8 bits the 1st
 //
 //technically can go up to 8 digit scores, but who the fuck...
+//1 digit = 1 byte, each leading 0 and then segments on/off
 internal uint64_t translateToSevenSegment
 (
     uint32_t score
 ){
     uint64_t digitMask = 0;
+    uint32_t mod = 10;
 
-    for(uint8_t i = 0; i < 8; ++i)
+    for(size_t i = 0; i < 64; i+=8)
     {
-        uint32_t digit = score % (i^10);
-        digitMask = digitMask & (segments[digit] << 8 * i);
+        uint32_t digit = (score * 10 / mod) % mod;
+        assert(digit < 10);
 
-        if(score < (uint32_t)(i^10))
+        digitMask = digitMask | (segments[digit] << i);
+
+        if(score < mod)
         {
             return digitMask;
         }
+        mod *= 10;
     }
 
-    for(uint8_t i = 0; i < 8; ++i)
+    for(size_t i = 0; i < 64; i+=8)
     {
-        digitMask = CPONG_SEGMENT_9 & (CPONG_SEGMENT_9 << 8 * i);
+        digitMask = CPONG_SEGMENT_9 & (CPONG_SEGMENT_9 << i);
     }
 
     return digitMask;
@@ -318,7 +344,6 @@ internal void incrementPlayerScore
     {
         paddles->player1_score += 1;
         paddles->player1_sevenSegment = translateToSevenSegment(paddles->player1_score);
-        printf("%llu\n", (paddles->player1_sevenSegment));
     }
     else if(playerIndex == 1)
     {
