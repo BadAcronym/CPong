@@ -30,6 +30,7 @@ if(-Not(Test-Path "./build/"))
     &mkdir "./build/"
 }
 
+&premake5 ecc
 &premake5 vs2022
 
 &MSBuild ./build/$Name.sln -p:Configuration=$build
