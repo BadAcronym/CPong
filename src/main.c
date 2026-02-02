@@ -7,7 +7,7 @@
 
 #include "main.h"
 
-//remove globals eventually
+//TODO: remove globals eventually
 global bool       running;
 
 global BITMAPINFO bitmapInfo;
@@ -92,9 +92,10 @@ LRESULT CALLBACK win32WindowCallback
             uint32_t width = clientRect.right - clientRect.left;
             uint32_t height = clientRect.bottom - clientRect.top;
 
-            //test
-            printf("%dx", width);
-            printf("%d\n", height);
+            #ifdef DEBUG
+                printf("%dx", width);
+                printf("%d\n", height);
+            #endif
 
             win32ResizeDIBSection(width, height);
             break;
