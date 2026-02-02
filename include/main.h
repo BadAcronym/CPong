@@ -38,6 +38,9 @@
 #define PLAYER2_UP       VK_UP
 #define PLAYER2_DOWN     VK_DOWN
 
+#define CPONG_DOWN       1
+#define CPONG_UP         -1
+
 typedef struct Coordinate
 {
     float x;
@@ -65,6 +68,8 @@ typedef struct Paddles
     uint64_t   updatetime;
     uint64_t   player1_rumbletime;
     uint64_t   player2_rumbletime;
+    uint64_t   lastmovetime;
+    int8_t     lastmovedirection;
 }Paddles;
 
 typedef struct CpongControlMap
