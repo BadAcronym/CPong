@@ -52,8 +52,8 @@ void win32BltBuf
     uint32_t             height
 ){
     StretchDIBits(deviceContext,
-                  0, 0, buf.width, buf.height,
                   0, 0, width, height,
+                  0, 0, buf.width, buf.height,
                   buf.memory, &buf.info,
                   DIB_RGB_COLORS, SRCCOPY);
 }
