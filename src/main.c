@@ -6,8 +6,6 @@
 #include <stdio.h>
 
 //XInput Shenanigans... thanks Casey :)
-clang_ignore_unused
-
 #define X_INPUT_GET_STATE(name) DWORD WINAPI name(DWORD dwUserIndex, XINPUT_STATE *pState)
 typedef X_INPUT_GET_STATE(x_input_get_state);
 X_INPUT_GET_STATE(XInputGetState_Stub)
@@ -26,14 +24,12 @@ X_INPUT_SET_STATE(XInputSetState_Stub)
 global x_input_set_state *XInputSetState_ = XInputSetState_Stub;
 #define XInputSetState XInputSetState_
 
-clang_diagnostic_pop
-
 //remove globals eventually... or never?
-global bool                 global_running;
-global Win32OffscreenBuffer global_backbuffer;
-global CpongControlMap      global_controllerMap;
-global CpongControlMap      global_keyMap;
-global Paddles              global_paddles;
+global bool                 running;
+global Win32OffscreenBuffer backbuffer;
+global CpongControlMap      controllerMap;
+global CpongControlMap      keyMap;
+global Paddles              paddles;
 
 Win32WindowDimensions win32GetWindowDimensions
 (
@@ -113,12 +109,10 @@ void win32LoadXInput(void)
 
     if(XInputLibrary)
     {
-        clang_ignore_functype_mismatch
-
-        XInputGetState = (x_input_get_state*)GetProcAddress(XInputLibrary, "XInputGetState");
-        XInputSetState = (x_input_set_state*)GetProcAddress(XInputLibrary, "XInputSetState");
-
-        clang_diagnostic_pop
+        XInputGetState = (x_input_get_state*)GetProcAddress(XInputLibrary,
+                                                            "XInputGetState");
+        XInputSetState = (x_input_set_state*)GetProcAddress(XInputLibrary,
+                                                            "XInputSetState");
     }
 }
 
@@ -287,8 +281,6 @@ internal bool isSevenSegment
         int64_t distance = pos_mod * i * segment_width + segment_gap;
     }
 
-    //TODO:
-
     return false;
 }
 
@@ -400,9 +392,11 @@ internal void checkBallBounce
         }
 
         //debug
-        printf("player1: %d, player2: %d\n", paddles->player1_score, paddles->player2_score);
+        printf("player1: %d, player2: %d\n", paddles->player1_score,
+               paddles->player2_score);
 
-        float scoreMod = 1 + 3 * (paddles->player1_score + paddles->player2_score) / 10000.0f;
+        float scoreMod = 1 + 3 * (paddles->player1_score + paddles->player2_score) /
+                         10000.0f;
         ball->h_vel = ball_hRNG[win32QueryTime().time % 8] * scoreMod;
         ball->v_vel = ball_vRNG[win32QueryTime().time % 10];
 
@@ -449,11 +443,11 @@ internal void updatePaddles
     float newY_player1_up   = paddles->player1.y - delta * paddles->v_vel;
     float newY_player1_down = paddles->player1.y + delta * paddles->v_vel;
 
-    bool player1_up   = global_controllerMap.player1_up   || global_keyMap.player1_up;
-    bool player1_down = global_controllerMap.player1_down || global_keyMap.player1_down;
+    bool player1_up   = controllerMap.player1_up   || keyMap.player1_up;
+    bool player1_down = controllerMap.player1_down || keyMap.player1_down;
 
-    bool player2_up   = global_controllerMap.player2_up   || global_keyMap.player2_up;
-    bool player2_down = global_controllerMap.player2_down || global_keyMap.player2_down;
+    bool player2_up   = controllerMap.player2_up   || keyMap.player2_up;
+    bool player2_down = controllerMap.player2_down || keyMap.player2_down;
 
     if(player1_up && newY_player1_up * height - paddles->height/2 > 0)
     {
@@ -485,8 +479,8 @@ internal void updatePaddles
     }
 }
 
-//TODO: move middle bar into a struct? maybe.
-//some kind of animation when scoring, on the score and the paddle who scored perhaps
+// TODO: move middle bar into a struct? maybe. some kind of animation when
+// scoring, on the score and the paddle who scored perhaps
 internal void updateBackbuffer
 (
     Win32OffscreenBuffer *buf,
@@ -557,19 +551,16 @@ LRESULT CALLBACK win32WindowCallback
     {
         case WM_DESTROY:
         {
-            //TODO: handle this as error, recreate window?
             printf("WM_DESTROY\n");
             break;
         }
         case WM_CLOSE:
         {
-            //TODO: handle this with message box or prompt
-            global_running = false;
+            running = false;
             break;
         }
         case WM_ACTIVATEAPP:
         {
-            //TODO: handle at all
             printf("WM_ACTIVATEAPP\n");
             break;
         }
@@ -580,13 +571,11 @@ LRESULT CALLBACK win32WindowCallback
 
             Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-            win32BltBuf(&global_backbuffer, context, dim.width, dim.height);
+            win32BltBuf(&backbuffer, context, dim.width, dim.height);
 
             EndPaint(window, &paintStruct);
             break;
         }
-        //NOTE: idk why we need to intercept WM_KEYDOWN? I'm guessing the DefWindowProc
-        //mangles our signals for the WM_KEYUP case we're handling below...
         case WM_KEYDOWN:
         {
         }
@@ -602,19 +591,19 @@ LRESULT CALLBACK win32WindowCallback
 
             if(wParam == PLAYER1_UP)
             {
-                global_keyMap.player1_up = isKeyDown;
+                keyMap.player1_up = isKeyDown;
             }
             else if(wParam == PLAYER1_DOWN)
             {
-                global_keyMap.player1_down = isKeyDown;
+                keyMap.player1_down = isKeyDown;
             }
             else if(wParam == PLAYER2_UP)
             {
-                global_keyMap.player2_up = isKeyDown;
+                keyMap.player2_up = isKeyDown;
             }
             else if(wParam == PLAYER2_DOWN)
             {
-                global_keyMap.player2_down = isKeyDown;
+                keyMap.player2_down = isKeyDown;
             }
         }
         default:
@@ -633,7 +622,6 @@ int main()
 }
 #endif
 
-clang_ignore_unused
 int CALLBACK WinMain
 (
     HINSTANCE instance,
@@ -645,9 +633,9 @@ int CALLBACK WinMain
 
     win32LoadXInput();
 
-    global_running = true;
+    running = true;
 
-    win32ResizeDIBSection(&global_backbuffer, 1280, 720);
+    win32ResizeDIBSection(&backbuffer, 1280, 720);
 
     WNDCLASS wc = {0};
 
@@ -672,12 +660,12 @@ int CALLBACK WinMain
                                   x, y, width, height,
                                   0, 0, instance, 0);
 
-    global_paddles.player1.x  = 0.0f;
-    global_paddles.player1.y  = 0.5f;
-    global_paddles.player2.x  = 1.0f;
-    global_paddles.player2.y  = 0.5f;
-    global_paddles.v_vel      = 0.003f;
-    global_paddles.updatetime = win32QueryTime().time;
+    paddles.player1.x  = 0.0f;
+    paddles.player1.y  = 0.5f;
+    paddles.player2.x  = 1.0f;
+    paddles.player2.y  = 0.5f;
+    paddles.v_vel      = 0.003f;
+    paddles.updatetime = win32QueryTime().time;
 
     Ball ball = {0};
     ball.coord.x    = 0.5f;
@@ -692,7 +680,7 @@ int CALLBACK WinMain
         return GetLastError();
     }
 
-    while(global_running)
+    while(running)
     {
         MSG message;
 
@@ -700,7 +688,7 @@ int CALLBACK WinMain
         {
             if(message.message == WM_QUIT)
             {
-                global_running = false;
+                running = false;
                 break;
             }
 
@@ -708,7 +696,7 @@ int CALLBACK WinMain
             DispatchMessageA(&message);
         }
 
-        resetRumble(&global_paddles);
+        resetRumble(&paddles);
 
         for(DWORD controlIndex = 0; controlIndex < XUSER_MAX_COUNT; ++controlIndex)
         {
@@ -716,35 +704,34 @@ int CALLBACK WinMain
             if(XInputGetState(controlIndex, &controlState) == ERROR_SUCCESS)
             {
                 XINPUT_GAMEPAD *pad = &controlState.Gamepad;
-                global_controllerMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
-                                                    pad->sThumbLY > CPONG_DEADZONE;
+                controllerMap.player1_up   = pad->wButtons & XINPUT_GAMEPAD_DPAD_UP ||
+                                             pad->sThumbLY > CPONG_DEADZONE;
 
-                global_controllerMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
-                                                    pad->sThumbLY < -CPONG_DEADZONE;
+                controllerMap.player1_down = pad->wButtons & XINPUT_GAMEPAD_DPAD_DOWN ||
+                                             pad->sThumbLY < -CPONG_DEADZONE;
 
-                global_controllerMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
-                                                    pad->sThumbRY > CPONG_DEADZONE;
+                controllerMap.player2_up   = pad->wButtons & XINPUT_GAMEPAD_Y ||
+                                             pad->sThumbRY > CPONG_DEADZONE;
 
-                global_controllerMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
-                                                    pad->sThumbRY < -CPONG_DEADZONE;
+                controllerMap.player2_down = pad->wButtons & XINPUT_GAMEPAD_A ||
+                                             pad->sThumbRY < -CPONG_DEADZONE;
 
             }
         }
 
-        updatePaddles(global_backbuffer.height, &global_paddles);
-        updateBall(global_backbuffer.width, global_backbuffer.height, &global_paddles, &ball);
+        updatePaddles(backbuffer.height, &paddles);
+        updateBall(backbuffer.width, backbuffer.height, &paddles, &ball);
 
-        updateBackbuffer(&global_backbuffer, &global_paddles, &ball);
+        updateBackbuffer(&backbuffer, &paddles, &ball);
 
         HDC context = GetDC(window);
 
         Win32WindowDimensions dim = win32GetWindowDimensions(window);
 
-        win32BltBuf(&global_backbuffer, context, dim.width, dim.height);
+        win32BltBuf(&backbuffer, context, dim.width, dim.height);
 
         ReleaseDC(window, context);
     }
 
     return 0;
 }
-clang_diagnostic_pop
