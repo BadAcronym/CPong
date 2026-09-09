@@ -1,48 +1,113 @@
 param
 (
-    [Parameter(position=0,mandatory=$false)]
-    $build = "DEBUG",
-    [Parameter(position=1,mandatory=$false)]
-    [switch]$dontrun = $false
+    [Parameter(Position = 0)][string]$build,
+    [Parameter(Position = 1)][string]$compile_only
 )
 
-Write-Host "Building $build...`n"
-
-$Configurations = "Debug", "Release"
-$Name = "CPong"
-
-foreach($config in $Configurations)
+if(-Not(Test-Path "./bin/" -PathType Container))
 {
-    $objPath = "./obj/Win64" + "_$config"
-    $binPath = "./bin/Win64" + "_$config"
+    mkdir "./bin/"
+}
 
-    if(-Not(Test-Path $objPath))
+if($build -eq $null -or $build -eq "")
+{
+    $build = "release"
+}
+
+$args_always=@("-DBUILD_WINDOWS",
+"src/main.c",
+"-Iinclude", "-std=c99",
+"-Wextra", "-Wall", "-Wpedantic", "-Wconversion", "-Wshadow", "-Wsign-compare",
+"-Wtype-limits", "-Wunused",
+"-Wno-unsafe-buffer-usage", "-Wno-declaration-after-statement", "-Wno-vla",
+"-Wno-implicit-void-ptr-cast")
+
+$args_release=@("-O2")
+
+$args_debug=@("-DDEBUG", "-gcodeview", "-O0")
+$args_debug_cl=@("/DDEBUG", "/Zi", "/Od")
+
+$args_asan=$args_debug_cl+@("-oa.exe", "/clang:-std=c99", "/DASAN",
+"/fsanitize=address", "/MD",
+"/link", "/SUBSYSTEM:CONSOLE")
+
+function compile
+{
+    param( [string[]]$1 )
+
+    Write-Host "identifying a compiler..."
+
+    if($build -eq "asan")
     {
-        &mkdir $objPath
+        if(-Not(Get-Command clang -ErrorAction SilentlyContinue))
+        {
+            Write-Host "ERROR: clang-cl needed for address sanitization." -Fore Red
+        }
+        $script:compiler="clang-cl"
+    }
+    elseif(Get-Command clang -ErrorAction SilentlyContinue)
+    {
+        Write-Host "found clang."
+        $script:compiler="clang"
+    }
+    elseif(Get-Command gcc -ErrorAction SilentlyContinue)
+    {
+        Write-Host "found gcc."
+        $script:compiler="gcc"
+    }
+    else
+    {
+        Write-Host "ERROR: no suitable compiler found." -Fore Red
     }
 
-    if(-Not(Test-Path $binPath))
+    Write-Host ""
+    Write-Host "compiling cpong..." -Fore Cyan
+    Write-Host ""
+
+    if(-Not (Test-Path "./bin/$build/" -PathType Container))
     {
-        &mkdir $binPath
+        mkdir "./bin/$build/"
     }
+
+    Write-Host "compiling $build build with the following command:"
+    Write-Host "$script:compiler $1"
+    &$script:compiler @1
+    if($LASTEXITCODE -ne 0)
+    {
+        Write-Host "`nERROR: $script:compiler failed to compile cpong.`n" -Fore Red
+        exit -1
+    }
+    Move-Item ./a.exe ./bin/$build/cpong.exe -Force
+    if($build -eq "release")
+    {
+        return;
+    }
+    Move-Item ./a.pdb ./bin/$build/cpong.pdb -Force
 }
 
-if(-Not(Test-Path "./build/"))
+if($build -eq "release")
 {
-    &mkdir "./build/"
+    compile ($args_always + $args_release)
 }
-
-&premake5 ecc
-&premake5 vs2022
-
-&MSBuild ./build/$Name.sln -p:Configuration=$build
-
-$target = "./bin/Win64" + "_$build/$Name.exe"
-
-if($LASTEXITCODE -eq 0 -and -not $dontrun)
+elseif($build -eq "debug")
 {
-    Write-Host "`nrunning $target..."
-
-    Invoke-Expression $target
+    compile ($args_always + $args_debug)
 }
-exit $LASTEXITCODE
+elseif($build -eq "asan")
+{
+    compile ($args_always + $args_asan)
+}
+else
+{
+    Write-Host "`nERROR: invalid make config: $build." -Fore Red
+    exit 3;
+}
+
+Write-Host "`n"
+
+if($compile_only -eq "--compile-only")
+{
+    exit 0
+}
+
+&./bin/$build/cpong
