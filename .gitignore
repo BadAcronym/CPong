@@ -7,5 +7,6 @@ obj/
 
 ecc*
 compile_commands*
+compile_flags*
 *.raddbg
 *.log
